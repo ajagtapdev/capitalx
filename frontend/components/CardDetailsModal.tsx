@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,14 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
+  Alert,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { CreditCard } from "../types/CreditCard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CameraView } from "expo-camera";
+import { CameraView, PermissionStatus, useCameraPermissions } from "expo-camera";
 import * as FileSystem from "expo-file-system";
 
 interface CardDetailsModalProps {
@@ -68,7 +70,41 @@ export default function CardDetailsModal({
   const [aprRate, setAprRate] = useState("");
   const [showCamera, setShowCamera] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   const cameraRef = useRef<any>(null);
+  
+  // Camera permissions
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+
+  // Request camera permission when needed
+  const ensureCameraPermission = async () => {
+    if (!cameraPermission?.granted) {
+      const permissionResult = await requestCameraPermission();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          "Camera Permission",
+          "We need camera access to scan your card. Please enable camera permissions in your device settings.",
+          [{ text: "OK" }]
+        );
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Handle showing camera
+  const handleShowCamera = async () => {
+    const hasPermission = await ensureCameraPermission();
+    if (hasPermission) {
+      setShowCamera(true);
+    }
+  };
+
+  // Handle camera ready state
+  const handleCameraReady = () => {
+    console.log("Camera is ready");
+    setCameraReady(true);
+  };
 
   // Validation functions
   const formatCardNumber = (input: string) => {
@@ -218,7 +254,7 @@ export default function CardDetailsModal({
 
   // Handle taking picture and sending to backend
   const takePicture = async () => {
-    if (cameraRef.current) {
+    if (cameraRef.current && cameraReady) {
       try {
         setIsLoading(true);
         const photo = await cameraRef.current.takePictureAsync({
@@ -230,7 +266,12 @@ export default function CardDetailsModal({
         console.error("Error taking picture:", error);
         setIsLoading(false);
         setShowCamera(false);
+        Alert.alert("Error", "Failed to take picture. Please try again.");
       }
+    } else {
+      Alert.alert("Error", "Camera is not ready. Please try again.");
+      setShowCamera(false);
+      setIsLoading(false);
     }
   };
 
@@ -239,26 +280,27 @@ export default function CardDetailsModal({
       // Create a FormData object to send the image
       const formData = new FormData();
       
-      // Get the file name from the URI
-      const filename = 'photo.png';
-
-      const file = DataURIToBlob(imageUri)
-      
-      
-      // Append the image file to the form data
-      formData.append('image', file, filename);
-
-      console.error("hello?", imageUri, filename, formData);
-      formData.forEach((value, key) => {
-        console.log(key + ', ' + value);
-      });
+      // For mobile, we need to handle the image file differently than on web
+      if (Platform.OS !== 'web') {
+        formData.append('image', {
+          uri: imageUri,
+          type: 'image/jpeg',
+          name: 'photo.jpg'
+        } as any);
+      } else {
+        // Web implementation
+        const filename = 'photo.png';
+        const file = DataURIToBlob(imageUri);
+        formData.append('image', file, filename);
+      }
       
       // Send the request to the backend
-      const response = await fetch('http://localhost:3001/identify-card', {
+      const response = await fetch('https://capitalx.onrender.com/identify-card', {
         method: 'POST',
         body: formData,
         headers: {
           'Accept': 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
       });
       
@@ -272,6 +314,7 @@ export default function CardDetailsModal({
       }
     } catch (error) {
       console.error("Error identifying card:", error);
+      Alert.alert("Error", "Failed to identify card. Please try again or enter details manually.");
     } finally {
       setIsLoading(false);
     }
@@ -352,6 +395,7 @@ export default function CardDetailsModal({
             ref={cameraRef}
             style={styles.camera}
             facing="back"
+            onCameraReady={handleCameraReady}
           >
             <View style={styles.cameraControls}>
               <TouchableOpacity 
@@ -360,7 +404,11 @@ export default function CardDetailsModal({
               >
                 <MaterialIcons name="cancel" size={30} color="#FFFFFF" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+              <TouchableOpacity 
+                style={[styles.captureButton, !cameraReady && styles.captureButtonDisabled]} 
+                onPress={takePicture}
+                disabled={!cameraReady}
+              >
                 <View style={styles.captureButtonInner} />
               </TouchableOpacity>
             </View>
@@ -372,7 +420,7 @@ export default function CardDetailsModal({
           
           <TouchableOpacity 
             style={styles.scanButton} 
-            onPress={() => setShowCamera(true)}
+            onPress={handleShowCamera}
           >
             <Ionicons name="camera" size={24} color="#FFFFFF" />
             <Text style={styles.scanButtonText}>Scan card to get benefits</Text>
@@ -644,5 +692,8 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     marginTop: 16,
+  },
+  captureButtonDisabled: {
+    opacity: 0.5,
   },
 });
