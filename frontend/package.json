@@ -31,7 +31,8 @@
     "react-native-screens": "~4.4.0",
     "react-native-svg": "15.8.0",
     "react-native-web": "~0.19.6",
-    "sonner-native": "0.17.0"
+    "sonner-native": "0.17.0",
+    "expo-dev-client": "~5.0.15"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
