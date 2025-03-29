@@ -73,6 +73,7 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 170 : 0}
     >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Chat</Text>
