@@ -9,6 +9,7 @@ import { StyleSheet, View, Text, TouchableOpacity, Modal, StatusBar } from "reac
 import HomeScreen from "./screens/HomeScreen";
 import ShopScreen from "./screens/ShopScreen";
 import LoginScreen from "./screens/LoginScreen";
+import InsightsScreen from "./screens/InsightsScreen";
 import ChatInterface from "./components/ChatInterface";
 import { useState } from "react";
 
@@ -41,6 +42,15 @@ function TabNavigator() {
         options={{
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="shopping-bag" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Insights"
+        component={InsightsScreen}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="insights" size={24} color={color} />
           ),
         }}
       />
