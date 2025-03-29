@@ -73,7 +73,7 @@ export default function App() {
   return (
     <SafeAreaProvider style={styles.container}>
       <Toaster />
-      <StatusBar style="dark" />
+      <StatusBar barStyle="light-content" />
       <NavigationContainer>
         {isAuthenticated ? (
           <>
