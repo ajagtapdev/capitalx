@@ -3,7 +3,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 
-const mockProducts = [
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  rating: number;
+  reviews: number;
+  image: string;
+  prime: boolean;
+};
+
+const mockProducts: Product[] = [
   {
     id: '1',
     name: 'Sony WH-1000XM4',
@@ -35,7 +45,7 @@ const mockProducts = [
 
 export default function ShopScreen() {
   const [searchQuery, setSearchQuery] = useState('');
-  const renderItem = ({ item }) => (
+  const renderItem = ({ item }: { item: Product }) => (
     <TouchableOpacity style={styles.productCard}>
       <Image source={{ uri: item.image }} style={styles.productImage} />
       <View style={styles.productInfo}>
@@ -74,7 +84,7 @@ export default function ShopScreen() {
         </View>
       </View>
       <FlatList
-        data={mockProducts}
+        data={mockProducts.filter((product) => product.name.toLowerCase().includes(searchQuery.toLowerCase()))}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}

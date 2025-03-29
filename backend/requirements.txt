@@ -1,0 +1,4 @@
+Flask==3.1.0
+flask_cors==5.0.1
+protobuf==6.30.2
+python-dotenv==1.1.0

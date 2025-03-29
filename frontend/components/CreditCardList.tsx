@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Dimensions } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { CreditCard } from "../types/CreditCard";
-
+import CardDetailsModal from "./CardDetailsModal";
 interface CreditCardListProps {
   cards: CreditCard[];
 }
@@ -36,6 +36,8 @@ export default function CreditCardList({ cards }: CreditCardListProps) {
           <Text style={styles.cardExpiry}>Expires {card.expiry}</Text>
         </Animated.View>
       ))}
+      
+      
     </View>
   );
 }
@@ -96,9 +98,34 @@ const styles = StyleSheet.create({
     fontFamily: "System",
   },
   cardExpiry: {
-    fontSize: 12,
-    color: "#FFFFFF",
+    fontSize: 14,
+    color: '#FFFFFF',
     opacity: 0.8,
-    fontWeight: "500",
+    marginBottom: 4,
+  },
+  infoValue: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  benefitsSection: {
+    marginTop: 24,
+  },
+  benefitsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 12,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  benefitText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    marginLeft: 8,
+    flex: 1,
   },
 });

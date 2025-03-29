@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 import Markdown from 'react-native-markdown-display';
@@ -14,6 +14,7 @@ interface Message {
 export default function ChatInterface({ onClose }: { onClose: () => void }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const sendMessage = async () => {
     if (!inputText.trim()) return;
@@ -27,6 +28,7 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
 
     setMessages(prev => [...prev, newMessage]);
     setInputText('');
+    setIsLoading(true);
 
     const botResponse = await fetch('http://localhost:3001/chat', {
       method: 'POST',
@@ -49,6 +51,7 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
       isUser: false,
       timestamp: new Date(),
     }]);
+    setIsLoading(false);
   };
 
   const renderMessage = ({ item }: { item: Message }) => (
@@ -61,13 +64,29 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
       ]}
     >
       <Text style={styles.messageText}>
-        <Markdown>{item.text}</Markdown>
+        <Markdown style={styles}>{item.text}</Markdown>
       </Text>
       <Text style={item.isUser ? styles.userTimestamp : styles.botTimestamp}>
         {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </Text>
     </Animated.View>
   );
+
+  const renderLoadingIndicator = () => {
+    if (!isLoading) return null;
+    return (
+      <Animated.View
+        entering={FadeIn}
+        exiting={FadeOut}
+        style={[styles.messageContainer, styles.botMessage]}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#FFFFFF" />
+          <Text style={styles.loadingText}>Thinking...</Text>
+        </View>
+      </Animated.View>
+    );
+  };
 
   return (
     <KeyboardAvoidingView
@@ -87,6 +106,7 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
         renderItem={renderMessage}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.messagesList}
+        ListFooterComponent={renderLoadingIndicator}
       />
 
       <View style={styles.inputContainer}>
@@ -163,6 +183,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
   },
+  body: {
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
   userTimestamp: {
     fontSize: 12,
     color: '#CCCCCC',
@@ -185,8 +209,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#222222',
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingTop: 12,
+    paddingBottom: 10,
     marginRight: 8,
     color: '#FFFFFF',
     maxHeight: 100,
@@ -201,5 +225,16 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#222222',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    paddingBottom: 0
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    marginLeft: 8,
+    fontSize: 16,
   },
 }); 
