@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Dimensions, Image, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Image, TouchableOpacity, Modal, ScrollView, SafeAreaView } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useState } from 'react';
@@ -99,7 +99,7 @@ function CardDetailsModal({ card, visible, onClose }: CardDetailsModalProps) {
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
+      <SafeAreaView style={styles.modalOverlay}>
         <View style={[styles.modalContent, { backgroundColor: card.color }]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{card.name}</Text>
@@ -108,39 +108,41 @@ function CardDetailsModal({ card, visible, onClose }: CardDetailsModalProps) {
             </TouchableOpacity>
           </View>
           
-          <View style={styles.modalBody}>
-            <View style={styles.infoSection}>
-              <Text style={styles.infoLabel}>APR</Text>
-              <Text style={styles.infoValue}>{card.apr}</Text>
+          <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+            <View style={styles.modalBody}>
+              <View style={styles.infoSection}>
+                <Text style={styles.infoLabel}>APR</Text>
+                <Text style={styles.infoValue}>{card.apr}</Text>
+              </View>
+              
+              <View style={styles.infoSection}>
+                <Text style={styles.infoLabel}>Credit Limit</Text>
+                <Text style={styles.infoValue}>{card.creditLimit}</Text>
+              </View>
+              
+              <View style={styles.infoSection}>
+                <Text style={styles.infoLabel}>Annual Fee</Text>
+                <Text style={styles.infoValue}>{card.annualFee}</Text>
+              </View>
+              
+              <View style={styles.infoSection}>
+                <Text style={styles.infoLabel}>Intro Offer</Text>
+                <Text style={styles.infoValue}>{card.introOffer}</Text>
+              </View>
+              
+              <View style={styles.benefitsSection}>
+                <Text style={styles.benefitsTitle}>Key Benefits</Text>
+                {card.benefits.map((benefit, index) => (
+                  <View key={index} style={styles.benefitItem}>
+                    <MaterialIcons name="check-circle" size={16} color="#FFFFFF" />
+                    <Text style={styles.benefitText}>{benefit}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-            
-            <View style={styles.infoSection}>
-              <Text style={styles.infoLabel}>Credit Limit</Text>
-              <Text style={styles.infoValue}>{card.creditLimit}</Text>
-            </View>
-            
-            <View style={styles.infoSection}>
-              <Text style={styles.infoLabel}>Annual Fee</Text>
-              <Text style={styles.infoValue}>{card.annualFee}</Text>
-            </View>
-            
-            <View style={styles.infoSection}>
-              <Text style={styles.infoLabel}>Intro Offer</Text>
-              <Text style={styles.infoValue}>{card.introOffer}</Text>
-            </View>
-            
-            <View style={styles.benefitsSection}>
-              <Text style={styles.benefitsTitle}>Key Benefits</Text>
-              {card.benefits.map((benefit, index) => (
-                <View key={index} style={styles.benefitItem}>
-                  <MaterialIcons name="check-circle" size={16} color="#FFFFFF" />
-                  <Text style={styles.benefitText}>{benefit}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
+          </ScrollView>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -246,15 +248,20 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: width - 40,
-    maxHeight: '80%',
+    height: '80%',
     borderRadius: 12,
-    padding: 24,
+    overflow: 'hidden',
+  },
+  modalScrollView: {
+    flex: 1,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    padding: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   modalTitle: {
     fontSize: 24,
@@ -266,7 +273,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   modalBody: {
-    flex: 1,
+    padding: 24,
   },
   infoSection: {
     marginBottom: 16,
