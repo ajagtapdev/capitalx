@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, ScrollView, SafeAreaView } from 'react-native';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -47,54 +47,56 @@ const InsightsScreen = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <MaterialIcons name="insights" size={24} color="#FFFFFF" />
-        <Text style={styles.headerText}>Your Insights</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Monthly Savings</Text>
-        <LineChart
-          data={savingsData}
-          width={screenWidth - 80}
-          height={220}
-          chartConfig={lineChartConfig}
-          bezier
-          style={styles.chart}
-        />
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Spending by Category</Text>
-        <BarChart
-          data={categoryData}
-          width={screenWidth - 80}
-          height={220}
-          chartConfig={barChartConfig}
-          style={styles.chart}
-          showBarTops={false}
-          fromZero
-          yAxisLabel="$"
-          yAxisSuffix="k"
-          flatColor={true}
-          withCustomBarColorFromData={true}
-        />
-      </View>
-
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <MaterialIcons name="savings" size={24} color="#0A84FF" />
-          <Text style={styles.statValue}>$1,234</Text>
-          <Text style={styles.statLabel}>Total Saved</Text>
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <MaterialIcons name="insights" size={24} color="#FFFFFF" />
+          <Text style={styles.headerText}>Your Insights</Text>
         </View>
-        <View style={styles.statCard}>
-          <MaterialIcons name="trending-up" size={24} color="#0A84FF" />
-          <Text style={styles.statValue}>+15%</Text>
-          <Text style={styles.statLabel}>vs Last Month</Text>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Monthly Savings</Text>
+          <LineChart
+            data={savingsData}
+            width={screenWidth - 80}
+            height={220}
+            chartConfig={lineChartConfig}
+            bezier
+            style={styles.chart}
+          />
         </View>
-      </View>
-    </ScrollView>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Spending by Category</Text>
+          <BarChart
+            data={categoryData}
+            width={screenWidth - 80}
+            height={220}
+            chartConfig={barChartConfig}
+            style={styles.chart}
+            showBarTops={false}
+            fromZero
+            yAxisLabel="$"
+            yAxisSuffix="k"
+            flatColor={true}
+            withCustomBarColorFromData={true}
+          />
+        </View>
+
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <MaterialIcons name="savings" size={24} color="#0A84FF" />
+            <Text style={styles.statValue}>$1,234</Text>
+            <Text style={styles.statLabel}>Total Saved</Text>
+          </View>
+          <View style={styles.statCard}>
+            <MaterialIcons name="trending-up" size={24} color="#0A84FF" />
+            <Text style={styles.statValue}>+15%</Text>
+            <Text style={styles.statLabel}>vs Last Month</Text>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
