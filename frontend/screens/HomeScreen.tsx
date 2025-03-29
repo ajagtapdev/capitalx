@@ -18,9 +18,6 @@ export default function HomeScreen() {
               <Text style={styles.subtitle}>Premium Member</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.settingsButton}>
-            <MaterialIcons name="settings" size={24} color="#0A84FF" />
-          </TouchableOpacity>
         </View>
       </View>
       <ScrollView style={styles.scrollView}>
@@ -71,13 +68,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#0A84FF',
     fontWeight: '500',
-  },
-  settingsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#222222',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
