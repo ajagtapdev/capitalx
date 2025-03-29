@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     opacity: 0.8,
     fontWeight: "500",
+    textAlign: "right",
   },
   cardNumber: {
     fontSize: 18,
