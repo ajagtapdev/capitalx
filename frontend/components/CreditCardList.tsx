@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 const mockCards = [
@@ -9,6 +9,7 @@ const mockCards = [
     expiry: '12/25',
     type: 'Visa Infinite',
     color: '#0047AB',
+    logo: require('../assets/card-logos/visa.png'),
   },
   {
     id: 2,
@@ -17,6 +18,7 @@ const mockCards = [
     expiry: '03/26',
     type: 'American Express',
     color: '#1E1E1E',
+    logo: require('../assets/card-logos/amex.png'),
   },
   {
     id: 3,
@@ -25,6 +27,16 @@ const mockCards = [
     expiry: '09/24',
     type: 'Visa Signature',
     color: '#00008B',
+    logo: require('../assets/card-logos/visa.png'),
+  },
+  {
+    id: 4,
+    name: 'Freedom Unlimited',
+    number: '••••  ••••  ••••  6012',
+    expiry: '09/24',
+    type: 'Visa Signature',
+    color: '#00008B',
+    logo: require('../assets/card-logos/mastercard.png'),
   },
 ];
 
@@ -40,7 +52,7 @@ export default function CreditCardList() {
         >
           <View style={styles.cardHeader}>
             <Text style={styles.cardName}>{card.name}</Text>
-            <Text style={styles.cardType}>{card.type}</Text>
+            <Image source={card.logo} style={styles.cardLogo} resizeMode="contain" />
           </View>
           <Text style={styles.cardNumber}>{card.number}</Text>
           <Text style={styles.cardExpiry}>Expires {card.expiry}</Text>
@@ -82,7 +94,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 20,
   },
   cardName: {
     fontSize: 22,
@@ -90,11 +102,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },
-  cardType: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    opacity: 0.8,
-    fontWeight: '500',
+  cardLogo: {
+    width: 40,
+    height: 40,
   },
   cardNumber: {
     fontSize: 20,
