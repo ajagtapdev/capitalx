@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     marginRight: 8,
     color: '#FFFFFF',
-    height: 40,
+    maxHeight: 100,
   },
   sendButton: {
     width: 40,
