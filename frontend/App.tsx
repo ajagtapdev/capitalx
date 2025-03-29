@@ -58,7 +58,7 @@ function AuthStack() {
 
 export default function App() {
   const [isChatVisible, setIsChatVisible] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   return (
     <SafeAreaProvider style={styles.container}>

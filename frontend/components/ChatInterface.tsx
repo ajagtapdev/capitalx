@@ -61,7 +61,7 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
       ]}
     >
       <Text style={styles.messageText}>
-        <Markdown>{item.text}</Markdown>
+        <Markdown style={styles}>{item.text}</Markdown>
       </Text>
       <Text style={item.isUser ? styles.userTimestamp : styles.botTimestamp}>
         {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -163,6 +163,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
   },
+  body: {
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
   userTimestamp: {
     fontSize: 12,
     color: '#CCCCCC',
@@ -185,8 +189,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#222222',
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingTop: 12,
+    paddingBottom: 10,
     marginRight: 8,
     color: '#FFFFFF',
     maxHeight: 100,
