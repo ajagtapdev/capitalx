@@ -28,15 +28,6 @@ function TabNavigator() {
       }}
     >
       <Tab.Screen
-        name="Profile"
-        component={HomeScreen}
-        options={{
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="person" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
         name="Shop"
         component={ShopScreen}
         options={{
@@ -51,6 +42,15 @@ function TabNavigator() {
         options={{
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="insights" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={HomeScreen}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="person" size={24} color={color} />
           ),
         }}
       />
@@ -124,13 +124,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#222222",
     elevation: 0,
-    height: 60,
-    paddingBottom: 8,
+    height: 75,
+    paddingBottom: 12,
     position: "relative",
   },
   chatButton: {
     position: "absolute",
-    bottom: 80,
+    bottom: 95,
     right: 20,
     width: 50,
     height: 50,
@@ -154,5 +154,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     height: "80%",
+  },
+  tabNavigator: {
+    height: 100,
   },
 });
