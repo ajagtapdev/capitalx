@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useState } from 'react';
+import Markdown from 'react-native-markdown-display';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 interface Message {
@@ -11,17 +12,10 @@ interface Message {
 }
 
 export default function ChatInterface({ onClose }: { onClose: () => void }) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'Hello! How can I help you today?',
-      isUser: false,
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!inputText.trim()) return;
 
     const newMessage: Message = {
@@ -34,16 +28,27 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
     setMessages(prev => [...prev, newMessage]);
     setInputText('');
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: 'replace this with the bot response later',
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, botResponse]);
-    }, 1000);
+    const botResponse = await fetch('http://localhost:3001/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat: inputText,
+        history: messages.map((msg) => ({
+          role: msg.isUser ? 'user' : 'model',
+          parts: [{ text: msg.text }],
+        })),
+      }),
+    });
+
+    const data = await botResponse.json();
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      text: data.text,
+      isUser: false,
+      timestamp: new Date(),
+    }]);
   };
 
   const renderMessage = ({ item }: { item: Message }) => (
@@ -55,7 +60,9 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
         item.isUser ? styles.userMessage : styles.botMessage,
       ]}
     >
-      <Text style={styles.messageText}>{item.text}</Text>
+      <Text style={styles.messageText}>
+        <Markdown>{item.text}</Markdown>
+      </Text>
       <Text style={item.isUser ? styles.userTimestamp : styles.botTimestamp}>
         {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </Text>
@@ -66,6 +73,7 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 170 : 0}
     >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Chat</Text>
@@ -137,6 +145,7 @@ const styles = StyleSheet.create({
   messageContainer: {
     maxWidth: '80%',
     padding: 12,
+    paddingTop: 0,
     borderRadius: 16,
     marginBottom: 8,
   },
@@ -157,13 +166,11 @@ const styles = StyleSheet.create({
   userTimestamp: {
     fontSize: 12,
     color: '#CCCCCC',
-    marginTop: 4,
     alignSelf: 'flex-end',
   },
   botTimestamp: {
     fontSize: 12,
     color: '#8E8E93',
-    marginTop: 4,
     alignSelf: 'flex-end',
   },
   inputContainer: {
@@ -182,7 +189,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     marginRight: 8,
     color: '#FFFFFF',
-    height: 40,
+    maxHeight: 100,
   },
   sendButton: {
     width: 40,
