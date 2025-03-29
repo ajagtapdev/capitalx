@@ -261,7 +261,7 @@ export default function CardDetailsModal({
           base64: true,
         });
         setShowCamera(false);
-        await identifyCardFromImage(photo.uri);
+        await processCardImage(photo.uri);
       } catch (error) {
         console.error("Error taking picture:", error);
         setIsLoading(false);
@@ -272,6 +272,68 @@ export default function CardDetailsModal({
       Alert.alert("Error", "Camera is not ready. Please try again.");
       setShowCamera(false);
       setIsLoading(false);
+    }
+  };
+
+  const processCardImage = async (imageUri: string) => {
+    try {
+      // Call both endpoints in parallel
+      await Promise.all([
+        identifyCardFromImage(imageUri),
+        scanCardFromImage(imageUri)
+      ]);
+      
+      // After successful scan, move to step 2
+      if (cardNumber) {
+        setStep(2);
+      }
+    } catch (error) {
+      console.error("Error processing card:", error);
+      Alert.alert("Error", "Failed to process card. Please try again or enter details manually.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const scanCardFromImage = async (imageUri: string) => {
+    try {
+      // Create a FormData object to send the image
+      const formData = new FormData();
+      
+      // For mobile, we need to handle the image file differently than on web
+      if (Platform.OS !== 'web') {
+        formData.append('image', {
+          uri: imageUri,
+          type: 'image/jpeg',
+          name: 'photo.jpg'
+        } as any);
+      } else {
+        // Web implementation
+        const filename = 'photo.png';
+        const file = DataURIToBlob(imageUri);
+        formData.append('image', file, filename);
+      }
+      
+      // Send the request to the scan-card endpoint
+      const response = await fetch('https://capitalx.onrender.com/scan-card', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // If the card was scanned successfully, update the form fields
+        setCardNumber(formatCardNumber(data.cardNumber));
+        setCardName(data.cardholderName);
+        setExpiry(data.expirationDate);
+      }
+    } catch (error) {
+      console.error("Error scanning card:", error);
+      throw error;
     }
   };
 
@@ -300,7 +362,6 @@ export default function CardDetailsModal({
         body: formData,
         headers: {
           'Accept': 'application/json',
-          'Content-Type': 'multipart/form-data',
         },
       });
       
@@ -314,40 +375,81 @@ export default function CardDetailsModal({
       }
     } catch (error) {
       console.error("Error identifying card:", error);
-      Alert.alert("Error", "Failed to identify card. Please try again or enter details manually.");
-    } finally {
-      setIsLoading(false);
+      throw error;
     }
   };
 
   const renderStep1 = () => (
     <View style={styles.content}>
-      <Text style={styles.subtitle}>
-        Verify and complete your card information
-      </Text>
-      <View style={styles.inputContainer}>
-        <Text style={styles.inputLabel}>Name</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your name"
-          placeholderTextColor="#8E8E93"
-          autoCapitalize="words"
-          value={cardName}
-          onChangeText={setCardName}
-        />
-      </View>
-      <View style={styles.inputContainer}>
-        <Text style={styles.inputLabel}>Credit Card</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your card number"
-          placeholderTextColor="#8E8E93"
-          keyboardType="numeric"
-          value={cardNumber}
-          onChangeText={handleCardNumberChange}
-          maxLength={19} // 16 digits + 3 spaces
-        />
-      </View>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={styles.loadingText}>Scanning card information...</Text>
+        </View>
+      ) : showCamera ? (
+        <View style={styles.cameraContainer}>
+          <CameraView
+            ref={cameraRef}
+            style={styles.camera}
+            facing="back"
+            onCameraReady={handleCameraReady}
+          >
+            <View style={styles.cameraControls}>
+              <TouchableOpacity 
+                style={styles.cancelButton} 
+                onPress={() => setShowCamera(false)}
+              >
+                <MaterialIcons name="cancel" size={30} color="#FFFFFF" />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.captureButton, !cameraReady && styles.captureButtonDisabled]} 
+                onPress={takePicture}
+                disabled={!cameraReady}
+              >
+                <View style={styles.captureButtonInner} />
+              </TouchableOpacity>
+            </View>
+          </CameraView>
+        </View>
+      ) : (
+        <>
+          <Text style={styles.subtitle}>
+            Verify and complete your card information
+          </Text>
+          
+          <TouchableOpacity 
+            style={styles.scanButton} 
+            onPress={handleShowCamera}
+          >
+            <Ionicons name="camera" size={24} color="#FFFFFF" />
+            <Text style={styles.scanButtonText}>Scan card to auto-fill</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your name"
+              placeholderTextColor="#8E8E93"
+              autoCapitalize="words"
+              value={cardName}
+              onChangeText={setCardName}
+            />
+          </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Credit Card</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your card number"
+              placeholderTextColor="#8E8E93"
+              keyboardType="numeric"
+              value={cardNumber}
+              onChangeText={handleCardNumberChange}
+              maxLength={19} // 16 digits + 3 spaces
+            />
+          </View>
+        </>
+      )}
     </View>
   );
 
@@ -389,42 +491,9 @@ export default function CardDetailsModal({
           <ActivityIndicator size="large" color="#FFFFFF" />
           <Text style={styles.loadingText}>Identifying card benefits...</Text>
         </View>
-      ) : showCamera ? (
-        <View style={styles.cameraContainer}>
-          <CameraView
-            ref={cameraRef}
-            style={styles.camera}
-            facing="back"
-            onCameraReady={handleCameraReady}
-          >
-            <View style={styles.cameraControls}>
-              <TouchableOpacity 
-                style={styles.cancelButton} 
-                onPress={() => setShowCamera(false)}
-              >
-                <MaterialIcons name="cancel" size={30} color="#FFFFFF" />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.captureButton, !cameraReady && styles.captureButtonDisabled]} 
-                onPress={takePicture}
-                disabled={!cameraReady}
-              >
-                <View style={styles.captureButtonInner} />
-              </TouchableOpacity>
-            </View>
-          </CameraView>
-        </View>
       ) : (
         <ScrollView>
           <Text style={styles.subtitle}>Enter your card benefits</Text>
-          
-          <TouchableOpacity 
-            style={styles.scanButton} 
-            onPress={handleShowCamera}
-          >
-            <Ionicons name="camera" size={24} color="#FFFFFF" />
-            <Text style={styles.scanButtonText}>Scan card to get benefits</Text>
-          </TouchableOpacity>
           
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>APR Rate</Text>
