@@ -148,7 +148,6 @@ const styles = StyleSheet.create({
   },
   cardPreview: {
     width: "100%",
-    height: 200,
     borderRadius: 12,
     padding: 24,
     marginBottom: 24,
