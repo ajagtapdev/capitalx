@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 import Markdown from 'react-native-markdown-display';
@@ -14,6 +14,7 @@ interface Message {
 export default function ChatInterface({ onClose }: { onClose: () => void }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const sendMessage = async () => {
     if (!inputText.trim()) return;
@@ -27,6 +28,7 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
 
     setMessages(prev => [...prev, newMessage]);
     setInputText('');
+    setIsLoading(true);
 
     const botResponse = await fetch('http://localhost:3001/chat', {
       method: 'POST',
@@ -49,6 +51,7 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
       isUser: false,
       timestamp: new Date(),
     }]);
+    setIsLoading(false);
   };
 
   const renderMessage = ({ item }: { item: Message }) => (
@@ -69,6 +72,22 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
     </Animated.View>
   );
 
+  const renderLoadingIndicator = () => {
+    if (!isLoading) return null;
+    return (
+      <Animated.View
+        entering={FadeIn}
+        exiting={FadeOut}
+        style={[styles.messageContainer, styles.botMessage]}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#FFFFFF" />
+          <Text style={styles.loadingText}>Thinking...</Text>
+        </View>
+      </Animated.View>
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -87,6 +106,7 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
         renderItem={renderMessage}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.messagesList}
+        ListFooterComponent={renderLoadingIndicator}
       />
 
       <View style={styles.inputContainer}>
@@ -205,5 +225,16 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#222222',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    paddingBottom: 0
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    marginLeft: 8,
+    fontSize: 16,
   },
 }); 
