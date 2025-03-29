@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Toaster } from "sonner-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { StyleSheet, View, Text, TouchableOpacity, Modal } from "react-native";
+import { StyleSheet, View, Text, TouchableOpacity, Modal, StatusBar } from "react-native";
 import HomeScreen from "./screens/HomeScreen";
 import ShopScreen from "./screens/ShopScreen";
 import LoginScreen from "./screens/LoginScreen";
@@ -63,6 +63,7 @@ export default function App() {
   return (
     <SafeAreaProvider style={styles.container}>
       <Toaster />
+      <StatusBar style="dark" />
       <NavigationContainer>
         {isAuthenticated ? (
           <>
