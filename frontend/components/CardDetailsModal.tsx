@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -6,11 +6,15 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
+  ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { CreditCard } from "../types/CreditCard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CameraView } from "expo-camera";
+import * as FileSystem from "expo-file-system";
 
 interface CardDetailsModalProps {
   visible: boolean;
@@ -32,6 +36,18 @@ const lookupBIN = async (bin: string) => {
   }
 };
 
+function DataURIToBlob(dataURI: string) {
+  const splitDataURI = dataURI.split(',')
+  const byteString = splitDataURI[0].indexOf('base64') >= 0 ? atob(splitDataURI[1]) : decodeURI(splitDataURI[1])
+  const mimeString = splitDataURI[0].split(':')[1].split(';')[0]
+
+  const ia = new Uint8Array(byteString.length)
+  for (let i = 0; i < byteString.length; i++)
+      ia[i] = byteString.charCodeAt(i)
+
+  return new Blob([ia], { type: mimeString })
+}
+
 export default function CardDetailsModal({
   visible,
   onClose,
@@ -46,6 +62,14 @@ export default function CardDetailsModal({
   const [securityCode, setSecurityCode] = useState("");
   const [cardType, setCardType] = useState("");
   const insets = useSafeAreaInsets();
+  
+  // New state variables for benefits step
+  const [benefits, setBenefits] = useState<string[]>([""]);
+  const [aprRate, setAprRate] = useState("");
+  const [showCamera, setShowCamera] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const cameraRef = useRef<any>(null);
+
   // Validation functions
   const formatCardNumber = (input: string) => {
     // Remove any non-digit characters
@@ -124,12 +148,15 @@ export default function CardDetailsModal({
   const isStep1Valid =
     cardName.trim() !== "" && cardNumber.replace(/\s/g, "").length >= 15;
   const isStep2Valid = isExpiryValid(expiry) && securityCode.length >= 3;
+  const isStep3Valid = aprRate.trim() !== "" && benefits.some(benefit => benefit.trim() !== "");
 
   const handleNext = () => {
     if (step === 1) {
       setStep(2);
+    } else if (step === 2) {
+      setStep(3);
     } else {
-      // Create new card with BIN-based information
+      // Create new card with BIN-based information and benefits
       onAddCard({
         cardName: `${cardType} ${
           cardType === "AMERICAN EXPRESS" ? "Platinum" : "Signature"
@@ -144,6 +171,8 @@ export default function CardDetailsModal({
           | "Mastercard",
         color: getCardColor(cardType),
         securityCode: securityCode,
+        benefits: benefits.filter(benefit => benefit.trim() !== ""),
+        apr: aprRate,
       });
 
       // Reset form
@@ -152,6 +181,8 @@ export default function CardDetailsModal({
       setExpiry("");
       setSecurityCode("");
       setCardType("");
+      setBenefits([""]);
+      setAprRate("");
       setStep(1);
 
       onClose();
@@ -168,6 +199,86 @@ export default function CardDetailsModal({
         return "#1E1E1E"; // Amex black
       default:
         return "#006B54"; // Default green
+    }
+  };
+
+  // Handle adding and removing benefit fields
+  const addBenefitField = () => {
+    setBenefits([...benefits, ""]);
+  };
+
+  const removeBenefitField = (index: number) => {
+    const newBenefits = [...benefits];
+    newBenefits.splice(index, 1);
+    if (newBenefits.length === 0) {
+      newBenefits.push("");
+    }
+    setBenefits(newBenefits);
+  };
+
+  const updateBenefit = (text: string, index: number) => {
+    const newBenefits = [...benefits];
+    newBenefits[index] = text;
+    setBenefits(newBenefits);
+  };
+
+  // Handle taking picture and sending to backend
+  const takePicture = async () => {
+    if (cameraRef.current) {
+      try {
+        setIsLoading(true);
+        const photo = await cameraRef.current.takePictureAsync({
+          base64: true,
+        });
+        setShowCamera(false);
+        await identifyCardFromImage(photo.uri);
+      } catch (error) {
+        console.error("Error taking picture:", error);
+        setIsLoading(false);
+        setShowCamera(false);
+      }
+    }
+  };
+
+  const identifyCardFromImage = async (imageUri: string) => {
+    try {
+      // Create a FormData object to send the image
+      const formData = new FormData();
+      
+      // Get the file name from the URI
+      const filename = 'photo.png';
+
+      const file = DataURIToBlob(imageUri)
+      
+      
+      // Append the image file to the form data
+      formData.append('image', file, filename);
+
+      console.error("hello?", imageUri, filename, formData);
+      formData.forEach((value, key) => {
+        console.log(key + ', ' + value);
+      });
+      
+      // Send the request to the backend
+      const response = await fetch('http://localhost:3001/identify-card', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.couldIdentify) {
+        // If the card was identified, populate the benefits fields
+        setAprRate(data.details.apr || "");
+        setBenefits(data.details.benefits.length > 0 ? data.details.benefits : [""]);
+      }
+    } catch (error) {
+      console.error("Error identifying card:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -233,6 +344,84 @@ export default function CardDetailsModal({
     </View>
   );
 
+  const renderStep3 = () => (
+    <View style={styles.content}>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={styles.loadingText}>Identifying card benefits...</Text>
+        </View>
+      ) : showCamera ? (
+        <View style={styles.cameraContainer}>
+          <CameraView
+            ref={cameraRef}
+            style={styles.camera}
+            facing="back"
+          >
+            <View style={styles.cameraControls}>
+              <TouchableOpacity 
+                style={styles.cancelButton} 
+                onPress={() => setShowCamera(false)}
+              >
+                <MaterialIcons name="cancel" size={30} color="#FFFFFF" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+                <View style={styles.captureButtonInner} />
+              </TouchableOpacity>
+            </View>
+          </CameraView>
+        </View>
+      ) : (
+        <ScrollView>
+          <Text style={styles.subtitle}>Enter your card benefits</Text>
+          
+          <TouchableOpacity 
+            style={styles.scanButton} 
+            onPress={() => setShowCamera(true)}
+          >
+            <Ionicons name="camera" size={24} color="#FFFFFF" />
+            <Text style={styles.scanButtonText}>Scan card to get benefits</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>APR Rate</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter APR Rate (e.g. 17.99%)"
+              placeholderTextColor="#8E8E93"
+              value={aprRate}
+              onChangeText={setAprRate}
+            />
+          </View>
+          
+          <Text style={styles.inputLabel}>Benefits</Text>
+          {benefits.map((benefit, index) => (
+            <View key={index} style={styles.benefitInputRow}>
+              <TextInput
+                style={styles.benefitInput}
+                placeholder="Enter a card benefit"
+                placeholderTextColor="#8E8E93"
+                value={benefit}
+                onChangeText={(text) => updateBenefit(text, index)}
+              />
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => removeBenefitField(index)}
+              >
+                <MaterialIcons name="remove-circle" size={24} color="#FF3B30" />
+              </TouchableOpacity>
+            </View>
+          ))}
+          
+          <TouchableOpacity style={styles.addButton} onPress={addBenefitField}>
+            <MaterialIcons name="add-circle" size={24} color="#34C759" />
+            <Text style={styles.addButtonText}>Add another benefit</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
+    </View>
+  );
+
   return (
     <Modal
       visible={visible}
@@ -246,47 +435,59 @@ export default function CardDetailsModal({
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.backButton}
-              onPress={step === 1 ? onClose : () => setStep(1)}
+              onPress={() => {
+                if (step === 1) {
+                  onClose();
+                } else if (showCamera) {
+                  setShowCamera(false);
+                } else {
+                  setStep(step - 1);
+                }
+              }}
             >
               <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
             </TouchableOpacity>
             <Text style={styles.title}>Card Details</Text>
-            {step === 1 ? (
-              <TouchableOpacity
-                style={[
-                  styles.nextButton,
-                  !isStep1Valid && styles.nextButtonDisabled,
-                ]}
-                disabled={!isStep1Valid}
-                onPress={handleNext}
-              >
-                <MaterialIcons
-                  name="arrow-forward"
-                  size={24}
-                  color={isStep1Valid ? "#FFFFFF" : "#8E8E93"}
-                />
-              </TouchableOpacity>
-            ) : (
+            {step === 3 ? (
               <TouchableOpacity
                 style={[
                   styles.doneButton,
-                  !isStep2Valid && styles.nextButtonDisabled,
+                  (!isStep3Valid || isLoading || showCamera) && styles.nextButtonDisabled,
                 ]}
-                disabled={!isStep2Valid}
+                disabled={!isStep3Valid || isLoading || showCamera}
                 onPress={handleNext}
               >
                 <Text
                   style={[
                     styles.doneText,
-                    !isStep2Valid && styles.doneTextDisabled,
+                    (!isStep3Valid || isLoading || showCamera) && styles.doneTextDisabled,
                   ]}
                 >
                   Done
                 </Text>
               </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.nextButton,
+                  ((step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid)) && styles.nextButtonDisabled,
+                ]}
+                disabled={(step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid)}
+                onPress={handleNext}
+              >
+                <MaterialIcons
+                  name="arrow-forward"
+                  size={24}
+                  color={(step === 1 && isStep1Valid) || (step === 2 && isStep2Valid) ? "#FFFFFF" : "#8E8E93"}
+                />
+              </TouchableOpacity>
             )}
           </View>
-          {step === 1 ? renderStep1() : renderStep2()}
+          {step === 1 
+            ? renderStep1() 
+            : step === 2 
+              ? renderStep2() 
+              : renderStep3()}
         
       </View>
       </SafeAreaView>
@@ -358,5 +559,95 @@ const styles = StyleSheet.create({
   },
   doneTextDisabled: {
     opacity: 0.5,
+  },
+  // New styles for benefits step
+  benefitInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  benefitInput: {
+    flex: 1,
+    backgroundColor: "#222222",
+    borderRadius: 8,
+    padding: 12,
+    color: "#FFFFFF",
+    fontSize: 16,
+    marginRight: 8,
+  },
+  removeButton: {
+    padding: 4,
+  },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 30,
+  },
+  addButtonText: {
+    color: "#34C759",
+    marginLeft: 8,
+    fontSize: 16,
+  },
+  scanButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0A84FF",
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 24,
+  },
+  scanButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 8,
+  },
+  cameraContainer: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  camera: {
+    flex: 1,
+  },
+  cameraControls: {
+    flex: 1,
+    backgroundColor: "transparent",
+    justifyContent: "flex-end",
+    padding: 20,
+  },
+  captureButton: {
+    alignSelf: "center",
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 5,
+    borderColor: "#FFFFFF",
+    marginBottom: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  captureButtonInner: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "#FFFFFF",
+  },
+  cancelButton: {
+    position: "absolute",
+    top: 20,
+    right: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    marginTop: 16,
   },
 });

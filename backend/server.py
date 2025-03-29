@@ -27,6 +27,7 @@ from dotenv import load_dotenv
 import os
 from google.cloud import vision
 from pydantic import BaseModel
+from json import loads
 
 load_dotenv()
 
@@ -82,7 +83,7 @@ def identify_card():
         
         # Create Gemini prompt with grounding
         prompt = """Search for this card, and if it can be identified as a specific card, list the card benefits/rewards and state the name of the type of card. Keep each field as concise as possible.
-        Use this JSON schema:
+        Use this JSON schema, even if the card cannot be identified (don't output any additional formatting or text other than the raw JSON):
         
         {
             "type": "object",
@@ -136,9 +137,13 @@ def identify_card():
         )
         
         # Parse the response to extract card information
-        response_text = response.text
         
-        return response_text
+        response_text = response.text
+        first_curly = response_text.find('{')
+        last_curly = response_text.rfind('}') + 1
+        response_text = response_text[first_curly:last_curly]
+        
+        return loads(response_text)
         
     except Exception as e:
         return {"error": str(e)}, 500

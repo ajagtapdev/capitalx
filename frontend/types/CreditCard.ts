@@ -7,4 +7,6 @@ export interface CreditCard {
   type: "Visa Infinite" | "Visa Signature" | "American Express" | "Mastercard";
   color: string;
   securityCode: string;
+  benefits?: string[];   // Card benefits/rewards
+  apr?: string;          // Annual Percentage Rate
 } 
