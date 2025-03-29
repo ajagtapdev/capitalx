@@ -50,6 +50,12 @@ class CardResponse(BaseModel):
     name: str
     details: Details
 
+class CardScanResponse(BaseModel):
+    cardNumber: str
+    cardholderName: str
+    expirationDate: str
+    success: bool
+
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.json
@@ -138,6 +144,74 @@ def identify_card():
         
         # Parse the response to extract card information
         
+        response_text = response.text
+        first_curly = response_text.find('{')
+        last_curly = response_text.rfind('}') + 1
+        response_text = response_text[first_curly:last_curly]
+        
+        return loads(response_text)
+        
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+@app.route('/scan-card', methods=['POST'])
+def scan_card():
+    if 'image' not in request.files:
+        return {"error": "No image file provided"}, 400
+    
+    file = request.files['image']
+    if file.filename == '':
+        return {"error": "No selected file"}, 400
+
+    client = google_genai.Client()
+    
+    try:
+        # Read the file data
+        image_data = file.read()
+        
+        # Create Gemini prompt with grounding
+        prompt = """Scan this credit card image and extract the card number, cardholder name, and expiration date.
+        Use this JSON schema (don't output any additional formatting or text other than the raw JSON):
+        
+        {
+            "type": "object",
+            "properties": {
+                "cardNumber": {
+                    "type": "string",
+                    "description": "The credit card number."
+                },
+                "cardholderName": {
+                    "type": "string",
+                    "description": "The name of the cardholder."
+                },
+                "expirationDate": {
+                    "type": "string",
+                    "description": "The expiration date in MM/YY format."
+                },
+                "success": {
+                    "type": "boolean",
+                    "description": "Whether the card details were successfully extracted."
+                }
+            },
+            "required": [
+                "cardNumber",
+                "cardholderName",
+                "expirationDate",
+                "success"
+            ]
+        }
+        """
+        
+        # Generate content with image
+        response = client.models.generate_content(
+            contents=[prompt, types.Part.from_bytes(data=image_data, mime_type=file.content_type)],
+            model="gemini-2.0-flash",
+            config=GenerateContentConfig(
+                temperature=0,
+            ),
+        )
+        
+        # Parse the response to extract card information
         response_text = response.text
         first_curly = response_text.find('{')
         last_curly = response_text.rfind('}') + 1
