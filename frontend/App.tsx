@@ -58,7 +58,7 @@ function AuthStack() {
 
 export default function App() {
   const [isChatVisible, setIsChatVisible] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   return (
     <SafeAreaProvider style={styles.container}>
@@ -85,11 +85,19 @@ export default function App() {
         transparent={true}
         onRequestClose={() => setIsChatVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+        <TouchableOpacity
+          style={styles.modalContainer}
+          activeOpacity={1}
+          onPress={() => setIsChatVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalContent}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
             <ChatInterface onClose={() => setIsChatVisible(false)} />
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaProvider>
   );

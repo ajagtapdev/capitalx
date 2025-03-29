@@ -1,48 +1,38 @@
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import { View, Text, StyleSheet, Dimensions } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
+import { CreditCard } from "../types/CreditCard";
 
-const mockCards = [
-  {
-    id: 1,
-    name: 'Sapphire Reserve',
-    number: '••••  ••••  ••••  4589',
-    expiry: '12/25',
-    type: 'Visa Infinite',
-    color: '#0047AB',
-  },
-  {
-    id: 2,
-    name: 'Platinum Card',
-    number: '••••  ••••  ••••  3782',
-    expiry: '03/26',
-    type: 'American Express',
-    color: '#1E1E1E',
-  },
-  {
-    id: 3,
-    name: 'Freedom Unlimited',
-    number: '••••  ••••  ••••  6011',
-    expiry: '09/24',
-    type: 'Visa Signature',
-    color: '#00008B',
-  },
-];
+interface CreditCardListProps {
+  cards: CreditCard[];
+}
 
-export default function CreditCardList() {
+export default function CreditCardList({ cards }: CreditCardListProps) {
+  const maskCardNumber = (number: string) => {
+    // Remove any spaces from the number
+    const cleaned = number.replace(/\s/g, "");
+    // Get last 4 digits
+    const lastFour = cleaned.slice(-4);
+    // For Amex (15 digits) or regular cards (16 digits)
+    const maskLength = cleaned.length - 4;
+    // Create masked part with proper spacing using medium bullet point •
+    const masked = "•".repeat(maskLength).replace(/(.{4})/g, "$1 ");
+    // Return masked number with last 4 digits
+    return `${masked}${lastFour}`;
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Your Top Cards</Text>
-      {mockCards.map((card, index) => (
-        <Animated.View 
+      {cards.map((card, index) => (
+        <Animated.View
           key={card.id}
           entering={FadeInUp.delay(index * 200)}
           style={[styles.card, { backgroundColor: card.color }]}
         >
           <View style={styles.cardHeader}>
-            <Text style={styles.cardName}>{card.name}</Text>
+            <Text style={styles.cardName}>{card.cardName}</Text>
             <Text style={styles.cardType}>{card.type}</Text>
           </View>
-          <Text style={styles.cardNumber}>{card.number}</Text>
+          <Text style={styles.cardNumber}>{maskCardNumber(card.number)}</Text>
           <Text style={styles.cardExpiry}>Expires {card.expiry}</Text>
         </Animated.View>
       ))}
@@ -50,7 +40,7 @@ export default function CreditCardList() {
   );
 }
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   container: {
@@ -58,10 +48,10 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
     marginBottom: 20,
-    fontFamily: 'System',
+    fontFamily: "System",
     letterSpacing: 0.5,
   },
   card: {
@@ -70,43 +60,45 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 24,
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: "rgba(255,255,255,0.1)",
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 40,
   },
   cardName: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#FFFFFF",
     letterSpacing: 0.5,
+    flexShrink: 1,
+    maxWidth: "70%",
   },
   cardType: {
-    fontSize: 14,
-    color: '#FFFFFF',
+    fontSize: 12,
+    color: "#FFFFFF",
     opacity: 0.8,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   cardNumber: {
-    fontSize: 20,
-    color: '#FFFFFF',
+    fontSize: 18,
+    color: "#FFFFFF",
     letterSpacing: 2,
     marginBottom: 20,
-    fontFamily: 'System',
+    fontFamily: "System",
   },
   cardExpiry: {
-    fontSize: 14,
-    color: '#FFFFFF',
+    fontSize: 12,
+    color: "#FFFFFF",
     opacity: 0.8,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 });
