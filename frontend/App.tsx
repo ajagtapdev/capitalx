@@ -3,9 +3,11 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Toaster } from 'sonner-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { StyleSheet, View, Text, TouchableOpacity, Animated } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Modal } from 'react-native';
 import HomeScreen from "./screens/HomeScreen";
 import ShopScreen from "./screens/ShopScreen";
+import ChatInterface from './components/ChatInterface';
+import { useState } from 'react';
 
 const Tab = createBottomTabNavigator();
 
@@ -41,15 +43,34 @@ function TabNavigator() {
   );
 }
 
-export default function App() {  return (
+export default function App() {
+  const [isChatVisible, setIsChatVisible] = useState(false);
+
+  return (
     <SafeAreaProvider style={styles.container}>
       <Toaster />
       <NavigationContainer>
         <TabNavigator />
       </NavigationContainer>
-      <TouchableOpacity style={styles.chatButton} onPress={() => {/* Handle chat */}}>
+      <TouchableOpacity 
+        style={styles.chatButton} 
+        onPress={() => setIsChatVisible(true)}
+      >
         <MaterialIcons name="chat" size={24} color="#FFFFFF" />
       </TouchableOpacity>
+
+      <Modal
+        visible={isChatVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsChatVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <ChatInterface onClose={() => setIsChatVisible(false)} />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaProvider>
   );
 }
@@ -86,5 +107,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4.65,
     elevation: 8,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    height: '80%',
   },
 });
