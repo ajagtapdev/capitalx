@@ -27,16 +27,33 @@ const initialCards: CreditCard[] = [
     type: "Visa Infinite",
     color: "#0A84FF", // iOS Blue
     securityCode: "123",
+    benefits: [
+      "3x points on travel and dining",
+      "$300 annual travel credit",
+      "50% more value when redeeming for travel",
+      "Priority Pass airport lounge access",
+      "Global Entry/TSA PreCheck credit"
+    ],
+    apr: "19.99% - 26.99% Variable APR"
   },
   {
     id: 2,
     cardName: "American Express Platinum",
     holderName: "Alex Smith",
-    number: "3782 123456 93782",
+    number: "3782 1234 5693 7821",
     expiry: "03/26",
     type: "American Express",
     color: "#1C1C1E", // Dark Gray/Almost Black
     securityCode: "1234",
+    benefits: [
+      "5x points on flights and hotels",
+      "$200 airline fee credit",
+      "Uber credits up to $200 annually",
+      "Centurion Lounge access",
+      "Global Dining Access by Resy",
+      "Marriott Bonvoy Gold Elite status"
+    ],
+    apr: "18.99% - 25.99% Variable APR"
   },
   {
     id: 3,
@@ -47,6 +64,14 @@ const initialCards: CreditCard[] = [
     type: "Mastercard",
     color: "#2C2C2E", // Slightly Lighter Gray
     securityCode: "123",
+    benefits: [
+      "2x miles on every purchase",
+      "75,000 bonus miles after spending $4,000",
+      "Global Entry/TSA PreCheck credit",
+      "No foreign transaction fees",
+      "Transfer miles to 15+ travel partners"
+    ],
+    apr: "17.49% - 25.49% Variable APR"
   },
   // ... other initial cards
 ];
@@ -108,6 +133,8 @@ export default function HomeScreen() {
       type: cardDetails.type,
       color: cardColor,
       securityCode: cardDetails.securityCode,
+      benefits: cardDetails.benefits,
+      apr: cardDetails.apr,
     };
 
     setCards((prevCards) => [...prevCards, newCard]);

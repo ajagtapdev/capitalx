@@ -1,12 +1,26 @@
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { CreditCard } from "../types/CreditCard";
-import CardDetailsModal from "./CardDetailsModal";
+import CardInfoModal from "./CardInfoModal";
+
 interface CreditCardListProps {
   cards: CreditCard[];
 }
 
 export default function CreditCardList({ cards }: CreditCardListProps) {
+  const [selectedCard, setSelectedCard] = useState<CreditCard | null>(null);
+  const [infoModalVisible, setInfoModalVisible] = useState(false);
+
+  const handleCardPress = (card: CreditCard) => {
+    setSelectedCard(card);
+    setInfoModalVisible(true);
+  };
+
+  const closeInfoModal = () => {
+    setInfoModalVisible(false);
+  };
+
   const maskCardNumber = (number: string) => {
     // Remove any spaces from the number
     const cleaned = number.replace(/\s/g, "");
@@ -23,21 +37,30 @@ export default function CreditCardList({ cards }: CreditCardListProps) {
   return (
     <View style={styles.container}>
       {cards.map((card, index) => (
-        <Animated.View
+        <TouchableOpacity
           key={card.id}
-          entering={FadeInUp.delay(index * 200)}
-          style={[styles.card, { backgroundColor: card.color }]}
+          onPress={() => handleCardPress(card)}
+          activeOpacity={0.8}
         >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardName}>{card.cardName}</Text>
-            <Text style={styles.cardType}>{card.type}</Text>
-          </View>
-          <Text style={styles.cardNumber}>{maskCardNumber(card.number)}</Text>
-          <Text style={styles.cardExpiry}>Expires {card.expiry}</Text>
-        </Animated.View>
+          <Animated.View
+            entering={FadeInUp.delay(index * 200)}
+            style={[styles.card, { backgroundColor: card.color }]}
+          >
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardName}>{card.cardName}</Text>
+              <Text style={styles.cardType}>{card.type}</Text>
+            </View>
+            <Text style={styles.cardNumber}>{maskCardNumber(card.number)}</Text>
+            <Text style={styles.cardExpiry}>Expires {card.expiry}</Text>
+          </Animated.View>
+        </TouchableOpacity>
       ))}
       
-      
+      <CardInfoModal
+        visible={infoModalVisible}
+        onClose={closeInfoModal}
+        card={selectedCard}
+      />
     </View>
   );
 }
