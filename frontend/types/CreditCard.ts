@@ -4,7 +4,7 @@ export interface CreditCard {
   holderName: string;    // e.g., "John Smith"
   number: string;
   expiry: string;
-  type: "Visa Infinite" | "Visa Signature" | "American Express" | "Mastercard";
+  type: string;
   color: string;
   securityCode: string;
   benefits?: string[];   // Card benefits/rewards

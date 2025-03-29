@@ -158,17 +158,11 @@ export default function CardDetailsModal({
     } else {
       // Create new card with BIN-based information and benefits
       onAddCard({
-        cardName: `${cardType} ${
-          cardType === "AMERICAN EXPRESS" ? "Platinum" : "Signature"
-        }`,
+        cardName: cardType,
         holderName: cardName, // The user's input name
         number: cardNumber,
         expiry: expiry,
-        type: cardType as
-          | "Visa Infinite"
-          | "Visa Signature"
-          | "American Express"
-          | "Mastercard",
+        type: cardType,
         color: getCardColor(cardType),
         securityCode: securityCode,
         benefits: benefits.filter(benefit => benefit.trim() !== ""),
@@ -274,6 +268,7 @@ export default function CardDetailsModal({
         // If the card was identified, populate the benefits fields
         setAprRate(data.details.apr || "");
         setBenefits(data.details.benefits.length > 0 ? data.details.benefits : [""]);
+        setCardType(data.name);
       }
     } catch (error) {
       console.error("Error identifying card:", error);

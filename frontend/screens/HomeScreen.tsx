@@ -101,11 +101,11 @@ export default function HomeScreen() {
 
     const newCard: CreditCard = {
       id: Date.now(),
-      cardName: "Credit Card", // The displayed name of the card product
+      cardName: cardDetails.cardName, // The displayed name of the card product
       holderName: cardDetails.holderName, // The user's name (stored but not displayed)
       number: cardDetails.number,
       expiry: cardDetails.expiry,
-      type: "Visa Infinite",
+      type: cardDetails.type,
       color: cardColor,
       securityCode: cardDetails.securityCode,
     };
