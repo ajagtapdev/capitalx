@@ -1,6 +1,13 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import React from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+} from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface SettingsInterfaceProps {
   onClose: () => void;
@@ -8,11 +15,15 @@ interface SettingsInterfaceProps {
 
 const SettingsInterface: React.FC<SettingsInterfaceProps> = ({ onClose }) => {
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Settings</Text>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+        <TouchableOpacity
+          onPress={onClose}
+          style={styles.closeButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
           <MaterialIcons name="close" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -37,48 +48,50 @@ const SettingsInterface: React.FC<SettingsInterfaceProps> = ({ onClose }) => {
           <MaterialIcons name="chevron-right" size={24} color="#8E8E93" />
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: "#1A1A1A",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === "ios" ? 20 : 10,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#222222',
+    borderBottomColor: "#222222",
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   closeButton: {
-    padding: 8,
+    padding: 12,
   },
   content: {
     flex: 1,
     padding: 20,
   },
   option: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#222222',
+    borderBottomColor: "#222222",
   },
   optionText: {
     flex: 1,
     marginLeft: 15,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
 });
 
-export default SettingsInterface; 
+export default SettingsInterface;

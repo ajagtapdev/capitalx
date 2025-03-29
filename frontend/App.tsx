@@ -8,7 +8,6 @@ import HomeScreen from "./screens/HomeScreen";
 import ShopScreen from "./screens/ShopScreen";
 import ChatInterface from './components/ChatInterface';
 import { useState } from 'react';
-import SettingsInterface from './components/SettingsInterface';
 
 const Tab = createBottomTabNavigator();
 
@@ -23,15 +22,6 @@ function TabNavigator() {
       }}
     >
       <Tab.Screen 
-        name="Profile" 
-        component={HomeScreen}
-        options={{
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="person" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen 
         name="Shop" 
         component={ShopScreen}
         options={{
@@ -40,6 +30,16 @@ function TabNavigator() {
           ),
         }}
       />
+      <Tab.Screen 
+        name="Profile" 
+        component={HomeScreen}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="person" size={24} color={color} />
+          ),
+        }}
+      />
+      
     </Tab.Navigator>
   );
 }
@@ -54,12 +54,6 @@ export default function App() {
       <NavigationContainer>
         <TabNavigator />
       </NavigationContainer>
-      <TouchableOpacity 
-        style={styles.settingsButton} 
-        onPress={() => setIsSettingsVisible(true)}
-      >
-        <MaterialIcons name="settings" size={24} color="#FFFFFF" />
-      </TouchableOpacity>
 
       <TouchableOpacity 
         style={styles.chatButton} 
@@ -67,19 +61,6 @@ export default function App() {
       >
         <MaterialIcons name="chat" size={24} color="#FFFFFF" />
       </TouchableOpacity>
-
-      <Modal
-        visible={isSettingsVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsSettingsVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <SettingsInterface onClose={() => setIsSettingsVisible(false)} />
-          </View>
-        </View>
-      </Modal>
 
       <Modal
         visible={isChatVisible}
@@ -137,17 +118,5 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     height: '80%',
-  },
-  settingsButton: {
-    position: 'absolute',
-    top: 80,  // Same height as chat button
-    right: 20,    // Mirror the chat button's position on the left
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#222222',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
   },
 });
