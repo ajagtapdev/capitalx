@@ -1,9 +1,10 @@
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/4130e4ac-57fc-4c3b-8d0e-d7653eca55ab" alt="1by1title">
+</p>
 
-![1by1title](https://github.com/user-attachments/assets/4130e4ac-57fc-4c3b-8d0e-d7653eca55ab)
-
-> **Revolutionizing Credit Card Management with Next-Gen AI 💳**
-
----
+<p align="center">
+  <strong>Revolutionizing Credit Card Management with Next-Gen AI 💳</strong>
+</p>
 
 ## Overview 🏦
 
@@ -43,7 +44,7 @@
 - **Frontend:** React Native + Expo – Crafting sleek, dynamic interfaces. 📱
 - **Backend:** Flask REST API – Robust, scalable, and lightning fast. 🌐
 - **AI Models:**  
-  - **Gemma-27B:** Precision-engineered AI (hosted on Modal Labs) 🤖  
+  - **Gemma-27B:** Precision-engineered AI, fine-tuned on Modal Labs for superior performance. 🤖  
   - Google Cloud Vision – Cutting-edge visual recognition 👁️  
   - Gemini 1.5 – Innovative next-gen intelligence 🌟
 - **Authentication & Storage:** Supabase – Fortifying your data security. 🔒
