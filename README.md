@@ -1,4 +1,5 @@
-# capitalX 🚀
+
+![1by1title](https://github.com/user-attachments/assets/4130e4ac-57fc-4c3b-8d0e-d7653eca55ab)
 
 > **Revolutionizing Credit Card Management with Next-Gen AI 💳**
 
