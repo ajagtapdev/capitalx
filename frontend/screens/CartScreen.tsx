@@ -34,6 +34,7 @@ interface CreditCard {
 interface BestCardResponse {
   bestCard: {
     reason: string;
+    name: string;
   }
 }
 
@@ -227,9 +228,9 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
           
           {bestCard && (
             <>
-              <View style={[styles.creditCard, { backgroundColor: getCardColor(bestCard.cardName) }]}>
+              <View style={[styles.creditCard, { backgroundColor: getCardColor(bestCard.name) }]}>
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardName}>Chosen Card</Text>
+                  <Text style={styles.cardName}>{bestCard.name}</Text>
                 </View>
                 
                 <Text style={styles.cardNumber}>•••• •••• •••• ••••</Text>
