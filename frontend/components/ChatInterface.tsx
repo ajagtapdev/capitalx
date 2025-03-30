@@ -30,7 +30,7 @@ export default function ChatInterface({ onClose }: { onClose: () => void }) {
     setInputText('');
     setIsLoading(true);
 
-    const botResponse = await fetch('http://localhost:3001/chat', {
+    const botResponse = await fetch('https://capitalx.onrender.com/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

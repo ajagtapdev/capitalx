@@ -172,4 +172,7 @@ const styles = StyleSheet.create({
   modalContent: {
     height: "80%",
   },
+  tabNavigator: {
+    height: 100,
+  },
 });
