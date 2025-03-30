@@ -250,12 +250,13 @@ def best_card():
             cart_details.append(item_details)
         
         # Build the prompt for Gemini
-        prompt = """Based on the user's credit cards and their current shopping cart, 
+        prompt = """Generate a name based on the primary benefit of the card and its provider. Based on the user's credit cards and their current shopping cart, 
         determine which card would be best to use for this purchase. Consider rewards, 
         cashback, and other benefits of each card. Provide your recommendation in this JSON format:
         
         {
             "bestCard": {
+                "name": "Name of the card",
                 "reason": "Maximum 10-words explanation of why this card is best for this purchase"
             }
         }
