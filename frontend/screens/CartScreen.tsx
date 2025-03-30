@@ -6,12 +6,14 @@ import {
   FlatList,
   TouchableOpacity,
   SafeAreaView,
-  Image,
   Animated,
 } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import { useCart } from '../context/CartContext';
 import KnotSDKModal from '../components/KnotSDKModal';
+import { supabase } from '../lib/supabaseClient';
+import { useUser } from '../contexts/UserContext';
+import ProductCard from '../components/ProductCard';
 
 interface CartScreenProps {
   navigation: any;
@@ -22,43 +24,39 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
   const [isKnotSDKVisible, setIsKnotSDKVisible] = useState(false);
   const [isPriceBreakdownVisible, setIsPriceBreakdownVisible] = useState(false);
   const NJ_TAX_RATE = 0.06625;
+  const { user } = useUser();
+
+  const fetchCards = async () => {
+    try {
+      if (!user?.id) return;
+
+      const { data: cardData, error } = await supabase
+        .from("credit_cards")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("Error fetching cards:", error);
+        return;
+      }
+
+      console.log("Cards refreshed after Knot SDK:", cardData);
+    } catch (error) {
+      console.error("Error fetching cards:", error);
+    }
+  };
 
   const renderItem = ({ item }: any) => (
-    <View style={styles.cartItem}>
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: item.imageUrl }}
-          style={styles.image}
-          resizeMode="contain"
-        />
-      </View>
-      <View style={styles.itemDetails}>
-        <Text style={styles.itemName} numberOfLines={2}>
-          {item.productName}
-        </Text>
-        <View style={styles.quantityContainer}>
-          <TouchableOpacity
-            onPress={() => updateQuantity(item.productName, item.quantity - 1)}
-            style={styles.quantityButton}
-          >
-            <AntDesign name="minus" size={16} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.quantity}>{item.quantity}</Text>
-          <TouchableOpacity
-            onPress={() => updateQuantity(item.productName, item.quantity + 1)}
-            style={styles.quantityButton}
-          >
-            <AntDesign name="plus" size={16} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.itemPrice}>{item.productPrice}</Text>
-      </View>
-      <TouchableOpacity
-        style={styles.removeButton}
-        onPress={() => removeFromCart(item.productName)}
-      >
-        <AntDesign name="delete" size={20} color="#8E8E93" />
-      </TouchableOpacity>
+    <View style={styles.cartItemContainer}>
+      <ProductCard
+        productName={item.productName}
+        productPrice={item.productPrice}
+        imageUrl={item.imageUrl}
+        quantity={item.quantity}
+        onQuantityChange={(newQuantity) => updateQuantity(item.productName, newQuantity)}
+        onDelete={() => removeFromCart(item.productName)}
+        isCartItem={true}
+      />
     </View>
   );
 
@@ -122,7 +120,6 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
       <KnotSDKModal
         visible={isKnotSDKVisible}
         onClose={() => setIsKnotSDKVisible(false)}
-        totalAmount={total}
       />
     </SafeAreaView>
   );
@@ -145,44 +142,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 100,
   },
-  cartItem: {
-    flexDirection: 'row',
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    marginBottom: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#2C2C2E',
-  },
-  imageContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain',
-  },
-  itemDetails: {
-    flex: 1,
-    marginLeft: 12,
-    justifyContent: 'space-between',
-  },
-  itemName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+  cartItemContainer: {
     marginBottom: 8,
+  },
+  cartControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingHorizontal: 4,
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
   },
   quantityButton: {
     width: 28,
@@ -197,14 +169,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginHorizontal: 16,
   },
-  itemPrice: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0A84FF',
-  },
   removeButton: {
-    padding: 12,
-    justifyContent: 'center',
+    padding: 8,
   },
   footer: {
     position: 'absolute',

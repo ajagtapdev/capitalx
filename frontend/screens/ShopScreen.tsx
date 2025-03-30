@@ -62,11 +62,26 @@ const ShopScreen: React.FC = () => {
         .filter((product: Product) => {
           if (!product) return false;
           const searchableText = `${product.productName || ''} ${product.productCategory || ''}`.toLowerCase();
-          return searchTerms.some(term => searchableText.includes(term));
+          // Only include products that have a close textual match
+          return searchTerms.every(term => searchableText.includes(term));
         })
-        .slice(0, 5);
+        .slice(0, 3);
 
-      setSearchSuggestions(suggestions);
+      // If no close matches, just show the typed query
+      if (suggestions.length === 0) {
+        setSearchSuggestions([{ 
+          productName: trimmedQuery,
+          productPrice: '',
+          productRating: '',
+          imageUrl: [],
+          description: '',
+          productCategory: '',
+          productSeller: '',
+          deliveryDate: ''
+        }]);
+      } else {
+        setSearchSuggestions(suggestions);
+      }
     } catch (error) {
       console.error('Error getting search suggestions:', error);
       setSearchSuggestions([]);
@@ -168,9 +183,14 @@ const ShopScreen: React.FC = () => {
             handleSearch(item.productName);
           }}
         >
-          <AntDesign name="search1" size={16} color="#8E8E93" style={styles.suggestionIcon} />
+          <AntDesign 
+            name={item.productCategory ? "search1" : "plus"} 
+            size={16} 
+            color="#8E8E93" 
+            style={styles.suggestionIcon} 
+          />
           <Text style={styles.suggestionText} numberOfLines={1}>
-            {item.productName}
+            {item.productCategory ? item.productName : `Search for "${item.productName}"`}
           </Text>
         </TouchableOpacity>
       ))}
@@ -258,7 +278,31 @@ const ShopScreen: React.FC = () => {
         )}
       </View>
 
-      {isSearching && searchSuggestions.length > 0 ? renderSearchSuggestions() : null}
+      {isSearching && searchSuggestions.length > 0 && (
+        <View style={styles.suggestionsContainer}>
+          {searchSuggestions.map((item, index) => (
+            <TouchableOpacity
+              key={`${item.productName}-${index}`}
+              style={styles.suggestionItem}
+              onPress={() => {
+                setSearchQuery(item.productName);
+                handleSearch(item.productName);
+              }}
+            >
+              <AntDesign 
+                name={item.productCategory ? "search1" : "plus"} 
+                size={16} 
+                color="#8E8E93" 
+                style={styles.suggestionIcon} 
+              />
+              <Text style={styles.suggestionText} numberOfLines={1}>
+                {item.productCategory ? item.productName : `Search for "${item.productName}"`}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       {isSearchActive ? renderSearchView() : renderHomeView()}
     </SafeAreaView>
   );
@@ -328,14 +372,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   suggestionsContainer: {
-    position: 'absolute',
-    top: 60,
-    left: 16,
-    right: 16,
     backgroundColor: '#1A1A1A',
+    marginHorizontal: 16,
+    marginBottom: 16,
     borderRadius: 12,
-    padding: 8,
-    zIndex: 1,
     borderWidth: 1,
     borderColor: '#2C2C2E',
   },
