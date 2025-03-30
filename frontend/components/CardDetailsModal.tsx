@@ -193,14 +193,15 @@ export default function CardDetailsModal({
 
   // Update validation
   const isStep1Valid =
-    cardName.trim() !== "" && cardNumber.replace(/\s/g, "").length >= 15;
-  const isStep2Valid = isExpiryValid(expiry) && securityCode.length >= 3;
+    cardName?.trim() !== "" && cardNumber?.replace(/\s/g, "").length >= 15;
+  const isStep2Valid = isExpiryValid(expiry || "") && (securityCode?.length || 0) >= 3;
   const isStep3Valid =
-    creditLimit.trim() !== "" &&
+    typeof aprRate === 'string' &&
+    aprRate.trim().length > 0 &&
+    creditLimit?.trim() !== "" &&
     !isNaN(Number(creditLimit)) &&
     Number(creditLimit) > 0 &&
-    aprRate.trim() !== "" &&
-    benefits.some((benefit) => benefit.trim() !== "");
+    benefits.some(benefit => benefit?.trim() !== "");
 
   const handleNext = async () => {
     if (step === 1) {
@@ -218,42 +219,35 @@ export default function CardDetailsModal({
           .from("credit_cards")
           .insert([
             {
-              benefits: benefits.filter((benefit) => benefit.trim() !== ""),
-              apr: aprRate,
-              number: cardNumber,
-              expiry: expiry,
-              security: securityCode,
+              benefits: benefits.filter((benefit) => benefit?.trim() !== ""),
+              apr: aprRate || "",
+              number: cardNumber || "",
+              expiry: expiry || "",
+              security: securityCode || "",
               credit_limit: Number(creditLimit),
-              cardholder_name: cardName,
+              cardholder_name: cardName || "",
               user_id: user.id,
             },
           ])
           .select()
           .single();
 
-        if (cardError) {
-          console.error("Error inserting card:", cardError);
-          throw new Error("Failed to save card");
-        }
+        if (cardError) throw cardError;
 
-        // If database insert was successful, update the UI
-        const newCard: Omit<CreditCard, "id"> = {
-          cardName: cardType,
-          holderName: cardName,
-          number: cardNumber,
-          expiry: expiry,
-          type: cardType,
-          color: getCardColor(cardType),
-          securityCode: securityCode,
-          creditLimit: Number(creditLimit),
-          benefits: benefits.filter((benefit) => benefit.trim() !== ""),
-          apr: aprRate,
-        };
+        // Then create new card with BIN-based information and benefits
+        onAddCard({
+          cardName: cardType || "",
+          holderName: cardName || "", // The user's input name
+          number: cardNumber || "",
+          expiry: expiry || "",
+          type: cardType || "",
+          color: getCardColor(cardType || ""),
+          securityCode: securityCode || "",
+          benefits: benefits.filter(benefit => benefit?.trim() !== ""),
+          apr: aprRate || "",
+        });
 
-        // Update the UI through the callback
-        onAddCard(newCard);
-
-        // Reset all form fields
+        // Reset form
         setCardName("");
         setCardNumber("");
         setExpiry("");
@@ -264,12 +258,14 @@ export default function CardDetailsModal({
         setCreditLimit("");
         setStep(1);
 
-        // Close the modal
         onClose();
       } catch (error) {
-        console.error("Error saving card:", error);
-        // Here you might want to show an error message to the user
-        // You could add a state variable for error handling and display it in the UI
+        console.error("Error adding card:", error);
+        Alert.alert(
+          "Error",
+          "Failed to add card. Please try again.",
+          [{ text: "OK" }]
+        );
       }
     }
   };
