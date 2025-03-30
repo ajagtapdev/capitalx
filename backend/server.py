@@ -16,7 +16,8 @@ from flask import (
     Flask,
     request,
     Response,
-    stream_with_context
+    stream_with_context,
+    jsonify
 )
 from flask_cors import CORS
 import google.generativeai as genai
@@ -212,6 +213,70 @@ def scan_card():
         )
         
         # Parse the response to extract card information
+        response_text = response.text
+        first_curly = response_text.find('{')
+        last_curly = response_text.rfind('}') + 1
+        response_text = response_text[first_curly:last_curly]
+        
+        return loads(response_text)
+        
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+@app.route('/best-card', methods=['POST'])
+def best_card():
+    try:
+        data = request.json
+        user_cards = data.get('cards', [])
+        cart_items = data.get('cartItems', [])
+        
+        if not user_cards or not cart_items:
+            return jsonify({"error": "No cards or cart items provided"}), 400
+        
+        # Format the data for Gemini prompt
+        card_details = []
+        for card in user_cards:
+            card_info = f"Card: {card.get('cardName', 'Unknown')} ({card.get('type', 'Unknown')})\n"
+            card_info += f"Number: {card.get('number', 'Unknown')}\n"
+            card_info += f"Rewards: {', '.join(card.get('rewards', []))}\n"
+            card_info += f"Benefits: {', '.join(card.get('benefits', []))}\n"
+            card_details.append(card_info)
+        
+        cart_details = []
+        for item in cart_items:
+            item_details = f"Product: {item.get('productName', 'Unknown')}\n"
+            item_details += f"Price: {item.get('productPrice', 'Unknown')}\n"
+            item_details += f"Category: {item.get('productCategory', 'Uncategorized')}\n"
+            cart_details.append(item_details)
+        
+        # Build the prompt for Gemini
+        prompt = """Based on the user's credit cards and their current shopping cart, 
+        determine which card would be best to use for this purchase. Consider rewards, 
+        cashback, and other benefits of each card. Provide your recommendation in this JSON format:
+        
+        {
+            "bestCard": {
+                "reason": "One-sentence explanation of why this card is best for this purchase"
+            }
+        }
+        
+        User's credit cards:
+        """
+        
+        prompt += "\n\n" + "\n\n".join(card_details)
+        prompt += "\n\nShopping cart items:\n\n" + "\n\n".join(cart_details)
+        
+        # Make the Gemini API call
+        client = google_genai.Client()
+        response = client.models.generate_content(
+            contents=[prompt],
+            model="gemini-1.5-flash",
+            config=GenerateContentConfig(
+                temperature=0,
+            ),
+        )
+        
+        # Parse the response
         response_text = response.text
         first_curly = response_text.find('{')
         last_curly = response_text.rfind('}') + 1
