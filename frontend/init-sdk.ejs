@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Initialize and Launch Knot SDK</title>
+    <!-- Embed env variables as a global variable -->
+    <script>
+      const env = <%- JSON.stringify(env) %>;
+    </script>
+  </head>
+  <body>
+    <h1>Initialize and Launch Knot SDK</h1>
+    <button id="open-sdk">Open Knot SDK</button>
+    <div id="sdk-container"></div>
+
+    <!-- Load the Knot SDK from the CDN -->
+    <script src="https://unpkg.com/knotapi-js@next"></script>
+    <script>
+      // Get the KnotapiJS constructor from the loaded script.
+      const KnotapiJS = window.KnotapiJS.default;
+      const knotapi = new KnotapiJS();
+
+      document
+        .getElementById("open-sdk")
+        .addEventListener("click", async () => {
+          try {
+            // Retrieve the session from your backend.
+            const res = await fetch("/api/session");
+            const session = await res.json();
+            console.log("Session:", session);
+
+            // Open the SDK using the configuration parameters.
+            knotapi.open({
+              sessionId: session.session, // Session ID from your backend.
+              clientId: env.KNOT_CLIENT_ID, // Now env is defined, using your env variable.
+              environment: "development", // "development" or "production"
+              product: "card_switcher", // or "card_switcher" as applicable.
+              merchantIds: [13], // For transaction_link, pass a single merchant ID.
+              entryPoint: "onboarding", // Optional entry point for analytics.
+              onSuccess: (product, details) => {
+                console.log("onSuccess", product, details);
+                // Print the authenticated webhook data
+                if (details && details.webhook) {
+                  console.log("Authenticated Webhook Data:", {
+                    webhookUrl: details.webhook.url,
+                    webhookHeaders: details.webhook.headers,
+                    webhookBody: details.webhook.body,
+                  });
+                }
+              },
+              onError: (product, errorCode, message) => {
+                console.error("onError", product, errorCode, message);
+              },
+              onEvent: (product, event, merchant, payload, taskId) => {
+                console.log(
+                  "onEvent",
+                  product,
+                  event,
+                  merchant,
+                  payload,
+                  taskId
+                );
+              },
+              onExit: (product) => {
+                console.log("onExit", product);
+              },
+            });
+          } catch (error) {
+            console.error("Error initializing Knot SDK:", error);
+          }
+        });
+    </script>
+  </body>
+</html>
