@@ -42,7 +42,7 @@ model = genai.GenerativeModel(
 )
 
 class Details(BaseModel):
-    apr: str
+    apr: float
     benefits: list[str]
 
 class CardResponse(BaseModel):
@@ -103,8 +103,8 @@ def identify_card():
                 "description": "An object containing APR and a list of benefits.",
                 "properties": {
                     "apr": {
-                    "type": "string",
-                    "description": "The APR value as a string."
+                    "type": "number",
+                    "description": "The APR value as a number. Enter -1 if unknown."
                     },
                     "benefits": {
                     "type": "array",
