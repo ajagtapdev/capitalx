@@ -1,16 +1,148 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Initialize and Launch Knot SDK</title>
-    <!-- Embed env variables as a global variable -->
+    
+    <!-- Make environment variables available to client-side JavaScript -->
     <script>
-      const env = <%- JSON.stringify(env) %>;
+      window.ENV = {
+        KNOT_CLIENT_ID: "<%= env.KNOT_CLIENT_ID %>"
+      };
     </script>
+    
+    <style>
+      :root {
+        --primary-color: #4a6cf7;
+        --primary-hover: #3a5bdf;
+        --text-color: #333;
+        --light-bg: #f8f9fa;
+        --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --border-radius: 8px;
+      }
+  
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+  
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: var(--text-color);
+        background-color: var(--light-bg);
+        padding: 0 20px;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+  
+      .card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 2rem;
+        max-width: 500px;
+        width: 100%;
+        margin: 2rem auto;
+      }
+  
+      .content-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1.5rem;
+      }
+  
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: var(--primary-color);
+      }
+  
+      .subtitle {
+        font-size: 1rem;
+        color: #666;
+        margin-bottom: 1.5rem;
+      }
+  
+      .button {
+        display: inline-block;
+        font-weight: 600;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+        user-select: none;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        border-radius: var(--border-radius);
+        transition: all 0.3s ease;
+        color: white;
+        background-color: var(--primary-color);
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+  
+      .button:hover {
+        background-color: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+  
+      .button:active {
+        transform: translateY(0);
+      }
+  
+      #sdk-container {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+  
+      .logo {
+        max-width: 120px;
+        margin-bottom: 1rem;
+      }
+  
+      /* Media queries for mobile responsiveness */
+      @media (max-width: 576px) {
+        .card {
+          padding: 1.5rem;
+          margin: 1rem auto;
+        }
+  
+        h1 {
+          font-size: 1.5rem;
+        }
+  
+        .button {
+          padding: 0.6rem 1.2rem;
+          font-size: 0.9rem;
+          width: 100%;
+        }
+      }
+    </style>
   </head>
   <body>
-    <h1>Initialize and Launch Knot SDK</h1>
-    <button id="open-sdk">Open Knot SDK</button>
+    <div class="card">
+      <div class="content-container">
+        <div>
+          <svg class="logo" viewBox="0 0 100 30" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="5" width="80" height="20" rx="5" fill="#4a6cf7"/>
+            <text x="50" y="19" font-family="Arial" font-size="12" fill="white" text-anchor="middle">KNOT</text>
+          </svg>
+          <h1>Update Your Card</h1>
+          <p class="subtitle">Quick and secure card update for Amazon payments</p>
+        </div>
+        <button id="open-sdk" class="button">Send Card to Amazon</button>
+      </div>
+    </div>
     <div id="sdk-container"></div>
 
     <!-- Load the Knot SDK from the CDN -->
@@ -20,47 +152,38 @@
       const KnotapiJS = window.KnotapiJS.default;
       const knotapi = new KnotapiJS();
 
-      document
-        .getElementById("open-sdk")
-        .addEventListener("click", async () => {
-          try {
-            // Retrieve the session from your backend.
-            const res = await fetch("/api/session");
-            const session = await res.json();
-            console.log("Session:", session);
+      document.getElementById('open-sdk').addEventListener('click', async () => {
+        try {
+          // Retrieve the session from your backend.
+          const res = await fetch('/api/session');
+          const session = await res.json();
+          console.log("Session:", session);
 
-            // Open the SDK using the configuration parameters.
-            knotapi.open({
-              sessionId: session.session, // Session ID from your backend.
-              clientId: env.KNOT_CLIENT_ID, // Now env is defined, using your env variable.
-              environment: "development", // "development" or "production"
-              product: "card_switcher", // or "card_switcher" as applicable.
-              merchantIds: [44], // For transaction_link, pass a single merchant ID.
-              entryPoint: "onboarding", // Optional entry point for analytics.
-              onSuccess: (product, details) => {
-                console.log("onSuccess", product, details);
-              },
-              onError: (product, errorCode, message) => {
-                console.error("onError", product, errorCode, message);
-              },
-              onEvent: (product, event, merchant, payload, taskId) => {
-                console.log(
-                  "onEvent",
-                  product,
-                  event,
-                  merchant,
-                  payload,
-                  taskId
-                );
-              },
-              onExit: (product) => {
-                console.log("onExit", product);
-              },
-            });
-          } catch (error) {
-            console.error("Error initializing Knot SDK:", error);
-          }
-        });
+          // Open the SDK using the configuration parameters.
+          knotapi.open({
+            sessionId: session.session,           // Session ID from your backend.
+            clientId: window.ENV.KNOT_CLIENT_ID,  // Client ID from environment variables
+            environment: "development",           // "development" or "production"
+            product: "card_switcher",             // or "card_switcher" as applicable.
+            merchantIds: [44],                    // For transaction_link, pass a single merchant ID.
+            entryPoint: "onboarding",             // Optional entry point for analytics.
+            onSuccess: (product, details) => {
+              console.log("onSuccess", product, details);
+            },
+            onError: (product, errorCode, message) => {
+              console.error("onError", product, errorCode, message);
+            },
+            onEvent: (product, event, merchant, payload, taskId) => {
+              console.log("onEvent", product, event, merchant, payload, taskId);
+            },
+            onExit: (product) => {
+              console.log("onExit", product);
+            }
+          });
+        } catch (error) {
+          console.error("Error initializing Knot SDK:", error);
+        }
+      });
     </script>
   </body>
 </html>

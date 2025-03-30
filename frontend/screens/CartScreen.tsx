@@ -146,6 +146,11 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
 
   const handleCardSelect = () => {
     setIsCardModalVisible(false);
+    setIsKnotSDKVisible(true);
+  };
+
+  const handleKnotClose = () => {
+    setIsKnotSDKVisible(false);
     setIsConfirmationVisible(true);
   };
 
@@ -172,7 +177,19 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
   const [isKnotSDKVisible, setIsKnotSDKVisible] = useState(false);
   const [isPriceBreakdownVisible, setIsPriceBreakdownVisible] = useState(false);
   const NJ_TAX_RATE = 0.06625;
-  const { user } = useUser();
+
+  // Calculate and format price values
+  const subtotal = getTotalPrice();
+  const tax = subtotal * NJ_TAX_RATE;
+  const total = subtotal + tax;
+  
+  const formatCurrency = (amount: number) => {
+    return `$${amount.toFixed(2)}`;
+  };
+  
+  const formattedSubtotal = formatCurrency(subtotal);
+  const formattedTax = formatCurrency(tax);
+  const formattedTotal = formatCurrency(total);
 
   const fetchCards = async () => {
     try {
@@ -317,7 +334,7 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
           >
             <View style={styles.priceHeader}>
               <Text style={styles.totalLabel}>Total:</Text>
-              {/* <Text style={styles.totalAmount}>{formattedTotal}</Text> */}
+              <Text style={styles.totalAmount}>{formattedTotal}</Text>
             </View>
             <Text style={styles.tapText}>
               {isPriceBreakdownVisible ? 'Tap to collapse' : 'Tap to expand'}
@@ -326,11 +343,11 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
               <View style={styles.priceBreakdown}>
                 <View style={styles.priceRow}>
                   <Text style={styles.priceLabel}>Subtotal:</Text>
-                  {/* <Text style={styles.priceValue}>{formattedSubtotal}</Text> */}
+                  <Text style={styles.priceValue}>{formattedSubtotal}</Text>
                 </View>
                 <View style={styles.priceRow}>
                   <Text style={styles.priceLabel}>Tax (6.625%):</Text>
-                  {/* <Text style={styles.priceValue}>{formattedTax}</Text> */}
+                  <Text style={styles.priceValue}>{formattedTax}</Text>
                 </View>
               </View>
             )}
@@ -346,6 +363,14 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
       <CardSelectionModal />
       <ConfirmationModal />
       <LoadingModal />
+      <KnotSDKModal 
+        visible={isKnotSDKVisible}
+        onClose={handleKnotClose}
+        onComplete={() => {
+          setIsKnotSDKVisible(false);
+          setIsConfirmationVisible(true);
+        }}
+      />
     </SafeAreaView>
   );
 };

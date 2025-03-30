@@ -6,9 +6,22 @@ import { AntDesign } from '@expo/vector-icons';
 interface KnotSDKModalProps {
   visible: boolean;
   onClose: () => void;
+  onComplete?: () => void;
 }
 
-const KnotSDKModal: React.FC<KnotSDKModalProps> = ({ visible, onClose }) => {
+const KnotSDKModal: React.FC<KnotSDKModalProps> = ({ visible, onClose, onComplete }) => {
+  const handleMessage = (event: any) => {
+    const data = event.nativeEvent.data;
+    try {
+      const parsedData = JSON.parse(data);
+      if (parsedData.type === 'PAYMENT_COMPLETE') {
+        onComplete && onComplete();
+      }
+    } catch (e) {
+      console.error('Error parsing WebView message', e);
+    }
+  };
+
   return (
     <Modal
       visible={visible}
@@ -22,7 +35,7 @@ const KnotSDKModal: React.FC<KnotSDKModalProps> = ({ visible, onClose }) => {
         </TouchableOpacity>
         <WebView
           source={{
-            uri: 'https://ad08-66-180-180-29.ngrok-free.app',
+            uri: 'https://b923-66-180-180-0.ngrok-free.app/init-sdk',
             headers: {
               'ngrok-skip-browser-warning': '1'
             }
@@ -37,6 +50,7 @@ const KnotSDKModal: React.FC<KnotSDKModalProps> = ({ visible, onClose }) => {
           automaticallyAdjustContentInsets={false}
           bounces={false}
           scrollEnabled={true}
+          onMessage={handleMessage}
         />
       </View>
     </Modal>
