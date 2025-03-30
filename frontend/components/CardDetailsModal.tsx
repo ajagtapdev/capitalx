@@ -430,7 +430,7 @@ export default function CardDetailsModal({
 
       if (data.couldIdentify) {
         // If the card was identified, populate the benefits fields
-        setAprRate(data.details.apr || "");
+        setAprRate(String(data.details.apr) || "");
         setBenefits(
           data.details.benefits.length > 0 ? data.details.benefits : [""]
         );
