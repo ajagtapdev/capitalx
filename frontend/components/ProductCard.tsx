@@ -79,11 +79,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
-      <Image
-        source={{ uri: imageUrl?.[0] || '' }}
-        style={styles.image}
-        resizeMode="contain"
-      />
+      <View style={styles.imageContainer}>
+        <Image
+          source={{ uri: imageUrl?.[0] || '' }}
+          style={styles.image}
+          resizeMode="contain"
+        />
+      </View>
       <View style={styles.infoContainer}>
         <View style={styles.contentContainer}>
           <Text style={styles.name} numberOfLines={2}>
@@ -122,11 +124,19 @@ const styles = StyleSheet.create({
     padding: 12,
     height: 160,
   },
-  image: {
+  imageContainer: {
     width: 140,
     height: '100%',
     borderRadius: 8,
-    backgroundColor: '#000000',
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    aspectRatio: 1,
   },
   infoContainer: {
     flex: 1,

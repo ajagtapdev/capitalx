@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from "react-nati
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { CreditCard } from "../types/CreditCard";
 import CardInfoModal from "./CardInfoModal";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabaseClient";
 
 interface CreditCardListProps {
   cards: CreditCard[];

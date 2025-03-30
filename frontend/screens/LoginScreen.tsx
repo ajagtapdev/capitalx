@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { createClient } from "@supabase/supabase-js";
 import { useUser } from "../contexts/UserContext";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabaseClient";
 
 interface LoginScreenProps {
   setIsAuthenticated: (value: boolean) => void;

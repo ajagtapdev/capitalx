@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { AntDesign } from '@expo/vector-icons';
 
 interface ImageSlideshowProps {
   images: string[];
@@ -69,12 +68,13 @@ const ImageSlideshow: React.FC<ImageSlideshowProps> = ({
         scrollEventThrottle={16}
       >
         {images.map((image, index) => (
-          <Image
-            key={index}
-            source={{ uri: image }}
-            style={[styles.image, { width }]}
-            resizeMode="cover"
-          />
+          <View key={index} style={[styles.imageContainer, { width }]}>
+            <Image
+              source={{ uri: image }}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          </View>
         ))}
       </ScrollView>
       
@@ -86,34 +86,11 @@ const ImageSlideshow: React.FC<ImageSlideshowProps> = ({
               onPress={() => handleDotPress(index)}
               style={[
                 styles.dot,
-                { backgroundColor: index === activeIndex ? '#0A84FF' : '#8E8E93' },
+                { backgroundColor: index === activeIndex ? '#0A84FF' : '#D1D1D6' },
               ]}
             />
           ))}
         </View>
-      )}
-
-      {images.length > 1 && (
-        <>
-          <TouchableOpacity
-            style={[styles.arrow, styles.leftArrow]}
-            onPress={() => {
-              const prevIndex = (activeIndex - 1 + images.length) % images.length;
-              handleDotPress(prevIndex);
-            }}
-          >
-            <AntDesign name="left" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.arrow, styles.rightArrow]}
-            onPress={() => {
-              const nextIndex = (activeIndex + 1) % images.length;
-              handleDotPress(nextIndex);
-            }}
-          >
-            <AntDesign name="right" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-        </>
       )}
     </View>
   );
@@ -122,12 +99,23 @@ const ImageSlideshow: React.FC<ImageSlideshowProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageContainer: {
+    height: '100%',
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   image: {
+    width: '100%',
     height: '100%',
+    aspectRatio: 1,
   },
   pagination: {
     position: 'absolute',
@@ -143,23 +131,6 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     marginHorizontal: 4,
-  },
-  arrow: {
-    position: 'absolute',
-    top: '50%',
-    transform: [{ translateY: -20 }],
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  leftArrow: {
-    left: 16,
-  },
-  rightArrow: {
-    right: 16,
   },
 });
 

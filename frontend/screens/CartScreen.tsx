@@ -17,6 +17,7 @@ import ImageSlideshow from '../components/ImageSlideshow';
 import ProductScreen from './ProductScreen';
 import { supabase } from '../lib/supabase';
 import { useUser } from '../contexts/UserContext';
+import { Image } from 'react-native';
 
 // Define the card interface
 interface CreditCard {
@@ -42,7 +43,7 @@ interface CartScreenProps {
 
 const { width } = Dimensions.get("window");
 
-const API_URL = 'http://127.0.0.1:5000'; // Change to your Flask server URL
+const API_URL = 'https://capitalx.onrender.com'; // Change to your Flask server URL
 
 const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
   const { items, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart();
@@ -164,24 +165,23 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
       onClose: () => navigation.goBack(),
     });
   };
+  const [isKnotSDKVisible, setIsKnotSDKVisible] = useState(false);
+  const [isPriceBreakdownVisible, setIsPriceBreakdownVisible] = useState(false);
+  const NJ_TAX_RATE = 0.06625;
 
   const renderItem = ({ item }: any) => (
-    <TouchableOpacity 
-      style={styles.cartItem}
-      onPress={() => handleProductPress(item)}
-    >
+    <View style={styles.cartItem}>
       <View style={styles.imageContainer}>
-        <ImageSlideshow
-          images={item.imageUrl}
-          height={120}
-          autoPlay={false}
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.image}
+          resizeMode="contain"
         />
       </View>
       <View style={styles.itemDetails}>
         <Text style={styles.itemName} numberOfLines={2}>
           {item.productName}
         </Text>
-        <Text style={styles.itemPrice}>{item.productPrice}</Text>
         <View style={styles.quantityContainer}>
           <TouchableOpacity
             onPress={() => updateQuantity(item.productName, item.quantity - 1)}
@@ -197,14 +197,15 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
             <AntDesign name="plus" size={16} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
+        <Text style={styles.itemPrice}>{item.productPrice}</Text>
       </View>
       <TouchableOpacity
         style={styles.removeButton}
         onPress={() => removeFromCart(item.productName)}
       >
-        <AntDesign name="delete" size={20} color="#FF3B30" />
+        <AntDesign name="delete" size={20} color="#8E8E93" />
       </TouchableOpacity>
-    </TouchableOpacity>
+    </View>
   );
 
   const getCardColor = (cardName: string): string => {
@@ -296,36 +297,55 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Shopping Cart</Text>
-      {items.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <AntDesign name="shoppingcart" size={64} color="#8E8E93" />
-          <Text style={styles.emptyText}>Your cart is empty</Text>
-        </View>
-      ) : (
-        <>
-          <FlatList
-            data={items}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.productName}
-            contentContainerStyle={styles.listContainer}
-          />
-          <View style={styles.footer}>
-            <View style={styles.totalContainer}>
-              <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalAmount}>${getTotalPrice().toFixed(2)}</Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.checkoutButton}
-              onPress={handleCheckout}
-            >
-              <Text style={styles.checkoutText}>Checkout</Text>
-            </TouchableOpacity>
+      <FlatList
+        data={items}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.productName}
+        contentContainerStyle={styles.listContainer}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <AntDesign name="shoppingcart" size={64} color="#8E8E93" />
+            <Text style={styles.emptyText}>Your cart is empty</Text>
           </View>
-          <CardSelectionModal />
-          <ConfirmationModal />
-          <LoadingModal />
-        </>
+        )}
+      />
+      {items.length > 0 && (
+        <View style={styles.footer}>
+          <TouchableOpacity 
+            style={styles.priceBreakdownButton}
+            onPress={() => setIsPriceBreakdownVisible(!isPriceBreakdownVisible)}
+          >
+            <View style={styles.priceHeader}>
+              <Text style={styles.totalLabel}>Total:</Text>
+              {/* <Text style={styles.totalAmount}>{formattedTotal}</Text> */}
+            </View>
+            <Text style={styles.tapText}>
+              {isPriceBreakdownVisible ? 'Tap to collapse' : 'Tap to expand'}
+            </Text>
+            {isPriceBreakdownVisible && (
+              <View style={styles.priceBreakdown}>
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Subtotal:</Text>
+                  {/* <Text style={styles.priceValue}>{formattedSubtotal}</Text> */}
+                </View>
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Tax (6.625%):</Text>
+                  {/* <Text style={styles.priceValue}>{formattedTax}</Text> */}
+                </View>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.checkoutButton}
+            onPress={() => handleCheckout()}
+          >
+            <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
+          </TouchableOpacity>
+        </View>
       )}
+      <CardSelectionModal />
+      <ConfirmationModal />
+      <LoadingModal />
     </SafeAreaView>
   );
 };
@@ -345,37 +365,46 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: 16,
+    paddingBottom: 100,
   },
   cartItem: {
     flexDirection: 'row',
     backgroundColor: '#1A1A1A',
-    borderRadius: 16,
-    marginVertical: 8,
-    overflow: 'hidden',
+    borderRadius: 12,
+    marginBottom: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
   },
   imageContainer: {
     width: 120,
+    height: 120,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
   },
   itemDetails: {
     flex: 1,
-    padding: 12,
+    marginLeft: 12,
     justifyContent: 'space-between',
   },
   itemName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  itemPrice: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0A84FF',
+    color: '#FFFFFF',
+    marginBottom: 8,
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginBottom: 8,
   },
   quantityButton: {
     width: 28,
@@ -390,52 +419,92 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginHorizontal: 16,
   },
+  itemPrice: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0A84FF',
+  },
   removeButton: {
     padding: 12,
     justifyContent: 'center',
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    backgroundColor: '#000000',
+    borderTopWidth: 1,
+    borderTopColor: '#1A1A1A',
+  },
+  priceBreakdownButton: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  priceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceBreakdown: {
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#2C2C2E',
+    paddingTop: 12,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  priceLabel: {
+    fontSize: 16,
+    color: '#8E8E93',
+  },
+  priceValue: {
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  totalLabel: {
+    fontSize: 18,
+    color: '#8E8E93',
+  },
+  totalAmount: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  checkoutButton: {
+    backgroundColor: '#0A84FF',
+    borderRadius: 12,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkoutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 100,
   },
   emptyText: {
     fontSize: 18,
     color: '#8E8E93',
-    marginTop: 16,
   },
-  footer: {
-    padding: 16,
-    backgroundColor: '#1A1A1A',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  totalContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  totalLabel: {
-    fontSize: 18,
-    color: '#FFFFFF',
-  },
-  totalAmount: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#0A84FF',
-  },
-  checkoutButton: {
-    backgroundColor: '#0A84FF',
-    borderRadius: 12,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkoutText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+  tapText: {
+    fontSize: 12,
+    color: '#8E8E93',
+    textAlign: 'right',
+    marginTop: 4,
   },
   modalOverlay: {
     flex: 1,
