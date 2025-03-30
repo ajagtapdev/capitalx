@@ -18,7 +18,7 @@ import AddCardButton from "../components/AddCardButton";
 import CardDetailsModal from "../components/CardDetailsModal";
 import { CreditCard } from "../types/CreditCard";
 import { useUser } from "../contexts/UserContext";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabaseClient";
 
 export default function HomeScreen({ setIsAuthenticated }: { setIsAuthenticated: (isAuthenticated: boolean) => void }) {
   const { user } = useUser();

@@ -22,7 +22,7 @@ import {
 } from "expo-camera";
 import { createClient } from "@supabase/supabase-js";
 import { useUser } from "../contexts/UserContext";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabaseClient";
 import * as FileSystem from "expo-file-system";
 
 interface CardDetailsModalProps {
