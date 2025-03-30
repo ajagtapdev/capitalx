@@ -256,7 +256,7 @@ def best_card():
         
         {
             "bestCard": {
-                "reason": "One-sentence explanation of why this card is best for this purchase"
+                "reason": "Maximum 10-words explanation of why this card is best for this purchase"
             }
         }
         
