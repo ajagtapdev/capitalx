@@ -12,7 +12,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useUser } from "../contexts/UserContext";
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../lib/supabase";
 
 interface SettingsInterfaceProps {
   onClose: () => void;
