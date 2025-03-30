@@ -42,7 +42,7 @@ function CartIcon() {
   );
 }
 
-function TabNavigator({ setIsAuthenticated }) {
+function TabNavigator({ setIsAuthenticated }: { setIsAuthenticated: (value: boolean) => void }) {
   return (
     <Tab.Navigator
       screenOptions={{
@@ -55,7 +55,7 @@ function TabNavigator({ setIsAuthenticated }) {
     >
       <Tab.Screen
         name="Profile"
-        component={(props) => (
+        component={(props: any) => (
           <HomeScreen {...props} setIsAuthenticated={setIsAuthenticated} />
         )}
         options={{
@@ -66,7 +66,9 @@ function TabNavigator({ setIsAuthenticated }) {
       />
       <Tab.Screen
         name="Shop"
-        component={ShopScreen}
+        component={(props: any) => (
+          <ShopScreen {...props} setIsAuthenticated={setIsAuthenticated} />
+        )}
         options={{
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="shopping-bag" size={24} color={color} />
@@ -93,12 +95,12 @@ function TabNavigator({ setIsAuthenticated }) {
   );
 }
 
-function AuthStack({ setIsAuthenticated }) {
+function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: (value: boolean) => void }) {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen
         name="Login"
-        component={(props) => (
+        component={(props: any) => (
           <LoginScreen {...props} setIsAuthenticated={setIsAuthenticated} />
         )}
       />
