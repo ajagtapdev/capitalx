@@ -11,8 +11,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Set your Knot credentials via environment variables or replace the placeholders.
-const KNOT_CLIENT_ID = process.env.KNOT_CLIENT_ID;
-const KNOT_CLIENT_SECRET = process.env.KNOT_CLIENT_SECRET;
+const KNOT_CLIENT_ID = "15f179c2-6e52-41a3-a4f9-ff8fe92d9787";
+const KNOT_CLIENT_SECRET = "8218e7f874444369bb723a4fb3b227eb";
 
 // Build the Basic Auth header
 const basicAuthHeader =
@@ -143,65 +143,8 @@ app.get("/init-sdk", (req, res) => {
 
 app.post("/webhook", async (req, res) => {
   try {
-    // Print the raw webhook data
-    console.log("\n=== Knot Webhook Data ===");
-    console.log(JSON.stringify(req.body, null, 2));
-    console.log("=======================\n");
-
     const { event, merchant, external_user_id } = req.body;
     const merchantAccountId = merchant.id;
-
-    // Handle AUTHENTICATED webhook for card switching
-    if (event === "AUTHENTICATED") {
-      console.log(
-        "Received AUTHENTICATED webhook for merchant:",
-        merchantAccountId
-      );
-
-      try {
-        // Make the card switch request within 15 seconds
-        const cardSwitchResponse = await fetch(
-          "https://secure.development.knotapi.com/card",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: basicAuthHeader,
-            },
-            body: JSON.stringify({
-              external_user_id,
-              merchant_id: merchantAccountId,
-              card_id: "123",
-              card: {
-                number: "4111111111111111",
-                exp_month: "12",
-                exp_year: "2025",
-                cvc: "123",
-                name: "Test User",
-              },
-            }),
-          }
-        );
-
-        if (!cardSwitchResponse.ok) {
-          const errorData = await cardSwitchResponse.json();
-          console.error("Error from Knot Card Switch:", errorData);
-          return res
-            .status(cardSwitchResponse.status)
-            .json({ error: errorData });
-        }
-
-        const cardSwitchData = await cardSwitchResponse.json();
-        console.log("Card switch successful:", cardSwitchData);
-        return res.json({
-          message: "Card switch initiated",
-          data: cardSwitchData,
-        });
-      } catch (err) {
-        console.error("Error switching card:", err);
-        return res.status(500).json({ error: "Error switching card" });
-      }
-    }
 
     // Check if the webhook event is NEW_TRANSACTIONS_AVAILABLE.
     if (event === "NEW_TRANSACTIONS_AVAILABLE") {

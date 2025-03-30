@@ -35,18 +35,10 @@
               clientId: env.KNOT_CLIENT_ID, // Now env is defined, using your env variable.
               environment: "development", // "development" or "production"
               product: "card_switcher", // or "card_switcher" as applicable.
-              merchantIds: [13], // For transaction_link, pass a single merchant ID.
+              merchantIds: [44], // For transaction_link, pass a single merchant ID.
               entryPoint: "onboarding", // Optional entry point for analytics.
               onSuccess: (product, details) => {
                 console.log("onSuccess", product, details);
-                // Print the authenticated webhook data
-                if (details && details.webhook) {
-                  console.log("Authenticated Webhook Data:", {
-                    webhookUrl: details.webhook.url,
-                    webhookHeaders: details.webhook.headers,
-                    webhookBody: details.webhook.body,
-                  });
-                }
               },
               onError: (product, errorCode, message) => {
                 console.error("onError", product, errorCode, message);
