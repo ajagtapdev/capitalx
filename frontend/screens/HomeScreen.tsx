@@ -20,7 +20,7 @@ import { CreditCard } from "../types/CreditCard";
 import { useUser } from "../contexts/UserContext";
 import { supabase } from "../lib/supabase";
 
-export default function HomeScreen({ setIsAuthenticated }) {
+export default function HomeScreen({ setIsAuthenticated }: { setIsAuthenticated: (isAuthenticated: boolean) => void }) {
   const { user } = useUser();
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [isAddCardVisible, setIsAddCardVisible] = useState(false);
@@ -134,6 +134,11 @@ export default function HomeScreen({ setIsAuthenticated }) {
     setCards((prevCards) => [...prevCards, newCard]);
   };
 
+  const handleCardDeleted = (cardId: number) => {
+    // Update local state by filtering out the deleted card
+    setCards((prevCards) => prevCards.filter(card => card.id !== cardId));
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerContainer}>
@@ -165,7 +170,7 @@ export default function HomeScreen({ setIsAuthenticated }) {
         {isLoading ? (
           <ActivityIndicator size="large" color="#FFFFFF" />
         ) : (
-          <CreditCardList cards={cards} />
+          <CreditCardList cards={cards} onCardDeleted={handleCardDeleted} />
         )}
       </ScrollView>
       <Modal

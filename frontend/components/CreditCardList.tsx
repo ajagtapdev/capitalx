@@ -3,12 +3,14 @@ import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from "react-nati
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { CreditCard } from "../types/CreditCard";
 import CardInfoModal from "./CardInfoModal";
+import { supabase } from "../lib/supabase";
 
 interface CreditCardListProps {
   cards: CreditCard[];
+  onCardDeleted?: (cardId: number) => void;
 }
 
-export default function CreditCardList({ cards }: CreditCardListProps) {
+export default function CreditCardList({ cards, onCardDeleted }: CreditCardListProps) {
   const [selectedCard, setSelectedCard] = useState<CreditCard | null>(null);
   const [infoModalVisible, setInfoModalVisible] = useState(false);
 
@@ -19,6 +21,28 @@ export default function CreditCardList({ cards }: CreditCardListProps) {
 
   const closeInfoModal = () => {
     setInfoModalVisible(false);
+  };
+
+  const deleteCard = async (cardId: number) => {
+    try {
+      // Delete the card from Supabase
+      const { error } = await supabase
+        .from("credit_cards")
+        .delete()
+        .eq("id", cardId);
+
+      if (error) {
+        throw error;
+      }
+
+      // Notify parent component that a card was deleted
+      if (onCardDeleted) {
+        onCardDeleted(cardId);
+      }
+    } catch (error) {
+      console.error("Error deleting card:", error);
+      throw error;
+    }
   };
 
   const maskCardNumber = (number: string) => {
@@ -59,6 +83,7 @@ export default function CreditCardList({ cards }: CreditCardListProps) {
       <CardInfoModal
         visible={infoModalVisible}
         onClose={closeInfoModal}
+        onDelete={deleteCard}
         card={selectedCard}
       />
     </View>

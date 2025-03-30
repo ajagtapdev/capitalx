@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Modal,
   ScrollView,
   Dimensions,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -16,15 +17,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 interface CardInfoModalProps {
   visible: boolean;
   onClose: () => void;
+  onDelete?: (cardId: number) => Promise<void>;
   card: CreditCard | null;
 }
 
 export default function CardInfoModal({
   visible,
   onClose,
+  onDelete,
   card,
 }: CardInfoModalProps) {
   const insets = useSafeAreaInsets();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!card) return null;
 
@@ -39,6 +43,34 @@ export default function CardInfoModal({
     const masked = "•".repeat(maskLength).replace(/(.{4})/g, "$1 ");
     // Return masked number with last 4 digits
     return `${masked}${lastFour}`;
+  };
+
+  const handleDeleteCard = () => {
+    Alert.alert(
+      "Delete Card",
+      `Are you sure you want to delete your ${card.cardName} card?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            if (onDelete) {
+              setIsDeleting(true);
+              try {
+                await onDelete(card.id);
+                onClose();
+              } catch (error) {
+                Alert.alert("Error", "Failed to delete card. Please try again.");
+                console.error("Error deleting card:", error);
+              } finally {
+                setIsDeleting(false);
+              }
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -113,6 +145,18 @@ export default function CardInfoModal({
               ))}
             </View>
           )}
+
+          {/* Delete Button */}
+          <TouchableOpacity 
+            style={styles.deleteButton}
+            onPress={handleDeleteCard}
+            disabled={isDeleting}
+          >
+            <MaterialIcons name="delete" size={20} color="#FFFFFF" />
+            <Text style={styles.deleteButtonText}>
+              {isDeleting ? "Deleting..." : "Delete Card"}
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     </Modal>
@@ -238,5 +282,20 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     marginLeft: 12,
     flex: 1,
+  },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FF3B30",
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 24,
+  },
+  deleteButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 16,
+    marginLeft: 8,
   },
 }); 
