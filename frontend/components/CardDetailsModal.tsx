@@ -14,6 +14,9 @@ import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { CreditCard } from "../types/CreditCard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CameraView } from "expo-camera";
+import { createClient } from "@supabase/supabase-js";
+import { useUser } from "../contexts/UserContext";
+import { supabase } from "../lib/supabase";
 import * as FileSystem from "expo-file-system";
 
 interface CardDetailsModalProps {
@@ -37,15 +40,17 @@ const lookupBIN = async (bin: string) => {
 };
 
 function DataURIToBlob(dataURI: string) {
-  const splitDataURI = dataURI.split(',')
-  const byteString = splitDataURI[0].indexOf('base64') >= 0 ? atob(splitDataURI[1]) : decodeURI(splitDataURI[1])
-  const mimeString = splitDataURI[0].split(':')[1].split(';')[0]
+  const splitDataURI = dataURI.split(",");
+  const byteString =
+    splitDataURI[0].indexOf("base64") >= 0
+      ? atob(splitDataURI[1])
+      : decodeURI(splitDataURI[1]);
+  const mimeString = splitDataURI[0].split(":")[1].split(";")[0];
 
-  const ia = new Uint8Array(byteString.length)
-  for (let i = 0; i < byteString.length; i++)
-      ia[i] = byteString.charCodeAt(i)
+  const ia = new Uint8Array(byteString.length);
+  for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
 
-  return new Blob([ia], { type: mimeString })
+  return new Blob([ia], { type: mimeString });
 }
 
 export default function CardDetailsModal({
@@ -57,18 +62,20 @@ export default function CardDetailsModal({
   setCardNumber,
   onAddCard,
 }: CardDetailsModalProps) {
+  const { user } = useUser();
   const [step, setStep] = useState(1);
   const [expiry, setExpiry] = useState("");
   const [securityCode, setSecurityCode] = useState("");
   const [cardType, setCardType] = useState("");
   const insets = useSafeAreaInsets();
-  
+
   // New state variables for benefits step
   const [benefits, setBenefits] = useState<string[]>([""]);
   const [aprRate, setAprRate] = useState("");
   const [showCamera, setShowCamera] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const cameraRef = useRef<any>(null);
+  const [creditLimit, setCreditLimit] = useState("");
 
   // Validation functions
   const formatCardNumber = (input: string) => {
@@ -148,38 +155,82 @@ export default function CardDetailsModal({
   const isStep1Valid =
     cardName.trim() !== "" && cardNumber.replace(/\s/g, "").length >= 15;
   const isStep2Valid = isExpiryValid(expiry) && securityCode.length >= 3;
-  const isStep3Valid = aprRate.trim() !== "" && benefits.some(benefit => benefit.trim() !== "");
+  const isStep3Valid =
+    creditLimit.trim() !== "" &&
+    !isNaN(Number(creditLimit)) &&
+    Number(creditLimit) > 0 &&
+    aprRate.trim() !== "" &&
+    benefits.some((benefit) => benefit.trim() !== "");
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 1) {
       setStep(2);
     } else if (step === 2) {
       setStep(3);
     } else {
-      // Create new card with BIN-based information and benefits
-      onAddCard({
-        cardName: cardType,
-        holderName: cardName, // The user's input name
-        number: cardNumber,
-        expiry: expiry,
-        type: cardType,
-        color: getCardColor(cardType),
-        securityCode: securityCode,
-        benefits: benefits.filter(benefit => benefit.trim() !== ""),
-        apr: aprRate,
-      });
+      try {
+        if (!user?.id) {
+          throw new Error("User not authenticated");
+        }
 
-      // Reset form
-      setCardName("");
-      setCardNumber("");
-      setExpiry("");
-      setSecurityCode("");
-      setCardType("");
-      setBenefits([""]);
-      setAprRate("");
-      setStep(1);
+        // First insert into Supabase
+        const { data: cardData, error: cardError } = await supabase
+          .from("credit_cards")
+          .insert([
+            {
+              benefits: benefits.filter((benefit) => benefit.trim() !== ""),
+              apr: aprRate,
+              number: cardNumber,
+              expiry: expiry,
+              security: securityCode,
+              credit_limit: Number(creditLimit),
+              cardholder_name: cardName,
+              user_id: user.id,
+            },
+          ])
+          .select()
+          .single();
 
-      onClose();
+        if (cardError) {
+          console.error("Error inserting card:", cardError);
+          throw new Error("Failed to save card");
+        }
+
+        // If database insert was successful, update the UI
+        const newCard: Omit<CreditCard, "id"> = {
+          cardName: cardType,
+          holderName: cardName,
+          number: cardNumber,
+          expiry: expiry,
+          type: cardType,
+          color: getCardColor(cardType),
+          securityCode: securityCode,
+          creditLimit: Number(creditLimit),
+          benefits: benefits.filter((benefit) => benefit.trim() !== ""),
+          apr: aprRate,
+        };
+
+        // Update the UI through the callback
+        onAddCard(newCard);
+
+        // Reset all form fields
+        setCardName("");
+        setCardNumber("");
+        setExpiry("");
+        setSecurityCode("");
+        setCardType("");
+        setBenefits([""]);
+        setAprRate("");
+        setCreditLimit("");
+        setStep(1);
+
+        // Close the modal
+        onClose();
+      } catch (error) {
+        console.error("Error saving card:", error);
+        // Here you might want to show an error message to the user
+        // You could add a state variable for error handling and display it in the UI
+      }
     }
   };
 
@@ -238,36 +289,37 @@ export default function CardDetailsModal({
     try {
       // Create a FormData object to send the image
       const formData = new FormData();
-      
-      // Get the file name from the URI
-      const filename = 'photo.png';
 
-      const file = DataURIToBlob(imageUri)
-      
-      
+      // Get the file name from the URI
+      const filename = "photo.png";
+
+      const file = DataURIToBlob(imageUri);
+
       // Append the image file to the form data
-      formData.append('image', file, filename);
+      formData.append("image", file, filename);
 
       console.error("hello?", imageUri, filename, formData);
       formData.forEach((value, key) => {
-        console.log(key + ', ' + value);
+        console.log(key + ", " + value);
       });
-      
+
       // Send the request to the backend
-      const response = await fetch('http://localhost:3001/identify-card', {
-        method: 'POST',
+      const response = await fetch("http://localhost:3001/identify-card", {
+        method: "POST",
         body: formData,
         headers: {
-          'Accept': 'application/json',
+          Accept: "application/json",
         },
       });
-      
+
       const data = await response.json();
-      
+
       if (data.couldIdentify) {
         // If the card was identified, populate the benefits fields
         setAprRate(data.details.apr || "");
-        setBenefits(data.details.benefits.length > 0 ? data.details.benefits : [""]);
+        setBenefits(
+          data.details.benefits.length > 0 ? data.details.benefits : [""]
+        );
         setCardType(data.name);
       }
     } catch (error) {
@@ -348,19 +400,18 @@ export default function CardDetailsModal({
         </View>
       ) : showCamera ? (
         <View style={styles.cameraContainer}>
-          <CameraView
-            ref={cameraRef}
-            style={styles.camera}
-            facing="back"
-          >
+          <CameraView ref={cameraRef} style={styles.camera} facing="back">
             <View style={styles.cameraControls}>
-              <TouchableOpacity 
-                style={styles.cancelButton} 
+              <TouchableOpacity
+                style={styles.cancelButton}
                 onPress={() => setShowCamera(false)}
               >
                 <MaterialIcons name="cancel" size={30} color="#FFFFFF" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+              <TouchableOpacity
+                style={styles.captureButton}
+                onPress={takePicture}
+              >
                 <View style={styles.captureButtonInner} />
               </TouchableOpacity>
             </View>
@@ -369,15 +420,29 @@ export default function CardDetailsModal({
       ) : (
         <ScrollView>
           <Text style={styles.subtitle}>Enter your card benefits</Text>
-          
-          <TouchableOpacity 
-            style={styles.scanButton} 
+
+          <TouchableOpacity
+            style={styles.scanButton}
             onPress={() => setShowCamera(true)}
           >
             <Ionicons name="camera" size={24} color="#FFFFFF" />
             <Text style={styles.scanButtonText}>Scan card to get benefits</Text>
           </TouchableOpacity>
-          
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>
+              Credit Limit<Text style={styles.required}>*</Text>
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter credit limit"
+              placeholderTextColor="#8E8E93"
+              keyboardType="numeric"
+              value={creditLimit}
+              onChangeText={setCreditLimit}
+            />
+          </View>
+
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>APR Rate</Text>
             <TextInput
@@ -388,7 +453,7 @@ export default function CardDetailsModal({
               onChangeText={setAprRate}
             />
           </View>
-          
+
           <Text style={styles.inputLabel}>Benefits</Text>
           {benefits.map((benefit, index) => (
             <View key={index} style={styles.benefitInputRow}>
@@ -407,7 +472,7 @@ export default function CardDetailsModal({
               </TouchableOpacity>
             </View>
           ))}
-          
+
           <TouchableOpacity style={styles.addButton} onPress={addBenefitField}>
             <MaterialIcons name="add-circle" size={24} color="#34C759" />
             <Text style={styles.addButtonText}>Add another benefit</Text>
@@ -425,8 +490,7 @@ export default function CardDetailsModal({
       onRequestClose={onClose}
     >
       <SafeAreaView style={[styles.modalContainer, { paddingTop: insets.top }]}>
-      <View style={styles.modalContainer}>
-      
+        <View style={styles.modalContainer}>
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.backButton}
@@ -447,7 +511,8 @@ export default function CardDetailsModal({
               <TouchableOpacity
                 style={[
                   styles.doneButton,
-                  (!isStep3Valid || isLoading || showCamera) && styles.nextButtonDisabled,
+                  (!isStep3Valid || isLoading || showCamera) &&
+                    styles.nextButtonDisabled,
                 ]}
                 disabled={!isStep3Valid || isLoading || showCamera}
                 onPress={handleNext}
@@ -455,7 +520,8 @@ export default function CardDetailsModal({
                 <Text
                   style={[
                     styles.doneText,
-                    (!isStep3Valid || isLoading || showCamera) && styles.doneTextDisabled,
+                    (!isStep3Valid || isLoading || showCamera) &&
+                      styles.doneTextDisabled,
                   ]}
                 >
                   Done
@@ -465,26 +531,33 @@ export default function CardDetailsModal({
               <TouchableOpacity
                 style={[
                   styles.nextButton,
-                  ((step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid)) && styles.nextButtonDisabled,
+                  ((step === 1 && !isStep1Valid) ||
+                    (step === 2 && !isStep2Valid)) &&
+                    styles.nextButtonDisabled,
                 ]}
-                disabled={(step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid)}
+                disabled={
+                  (step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid)
+                }
                 onPress={handleNext}
               >
                 <MaterialIcons
                   name="arrow-forward"
                   size={24}
-                  color={(step === 1 && isStep1Valid) || (step === 2 && isStep2Valid) ? "#FFFFFF" : "#8E8E93"}
+                  color={
+                    (step === 1 && isStep1Valid) || (step === 2 && isStep2Valid)
+                      ? "#FFFFFF"
+                      : "#8E8E93"
+                  }
                 />
               </TouchableOpacity>
             )}
           </View>
-          {step === 1 
-            ? renderStep1() 
-            : step === 2 
-              ? renderStep2() 
-              : renderStep3()}
-        
-      </View>
+          {step === 1
+            ? renderStep1()
+            : step === 2
+            ? renderStep2()
+            : renderStep3()}
+        </View>
       </SafeAreaView>
     </Modal>
   );
@@ -644,5 +717,9 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     marginTop: 16,
+  },
+  required: {
+    color: "#FF3B30",
+    fontWeight: "bold",
   },
 });

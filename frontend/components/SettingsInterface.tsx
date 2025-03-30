@@ -8,12 +8,24 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useUser } from "../contexts/UserContext";
 
 interface SettingsInterfaceProps {
   onClose: () => void;
+  setIsAuthenticated: (value: boolean) => void;
 }
 
-const SettingsInterface: React.FC<SettingsInterfaceProps> = ({ onClose }) => {
+const SettingsInterface: React.FC<SettingsInterfaceProps> = ({
+  onClose,
+  setIsAuthenticated,
+}) => {
+  const { setUser } = useUser();
+
+  const handleLogout = () => {
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       {/* Header */}
@@ -48,6 +60,14 @@ const SettingsInterface: React.FC<SettingsInterfaceProps> = ({ onClose }) => {
           <MaterialIcons name="chevron-right" size={24} color="#8E8E93" />
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity style={styles.settingsItem} onPress={handleLogout}>
+        <View style={styles.settingsItemContent}>
+          <Text style={[styles.settingsItemText, { color: "#FF453A" }]}>
+            Log Out
+          </Text>
+        </View>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -91,6 +111,21 @@ const styles = StyleSheet.create({
     marginLeft: 15,
     fontSize: 16,
     color: "#FFFFFF",
+  },
+  settingsItem: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#222222",
+  },
+  settingsItemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  settingsItemText: {
+    fontSize: 17,
+    fontWeight: "500",
   },
 });
 

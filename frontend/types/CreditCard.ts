@@ -7,6 +7,7 @@ export interface CreditCard {
   type: string;
   color: string;
   securityCode: string;
+  creditLimit: number;   // Required credit limit
   benefits?: string[];   // Card benefits/rewards
   apr?: string;          // Annual Percentage Rate
 } 

@@ -5,18 +5,26 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Toaster } from "sonner-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { StyleSheet, View, Text, TouchableOpacity, Modal, StatusBar } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  Modal,
+  StatusBar,
+} from "react-native";
 import HomeScreen from "./screens/HomeScreen";
 import ShopScreen from "./screens/ShopScreen";
 import LoginScreen from "./screens/LoginScreen";
 import InsightsScreen from "./screens/InsightsScreen";
 import ChatInterface from "./components/ChatInterface";
 import { useState } from "react";
+import { UserProvider } from "./contexts/UserContext";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-function TabNavigator() {
+function TabNavigator({ setIsAuthenticated }) {
   return (
     <Tab.Navigator
       screenOptions={{
@@ -29,7 +37,9 @@ function TabNavigator() {
     >
       <Tab.Screen
         name="Profile"
-        component={HomeScreen}
+        component={(props) => (
+          <HomeScreen {...props} setIsAuthenticated={setIsAuthenticated} />
+        )}
         options={{
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="person" size={24} color={color} />
@@ -58,59 +68,66 @@ function TabNavigator() {
   );
 }
 
-function AuthStack() {
+function AuthStack({ setIsAuthenticated }) {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen
+        name="Login"
+        component={(props) => (
+          <LoginScreen {...props} setIsAuthenticated={setIsAuthenticated} />
+        )}
+      />
     </Stack.Navigator>
   );
 }
 
 export default function App() {
   const [isChatVisible, setIsChatVisible] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   return (
-    <SafeAreaProvider style={styles.container}>
-      <Toaster />
-      <StatusBar barStyle="light-content" />
-      <NavigationContainer>
-        {isAuthenticated ? (
-          <>
-            <TabNavigator />
-            <TouchableOpacity
-              style={styles.chatButton}
-              onPress={() => setIsChatVisible(true)}
-            >
-              <MaterialIcons name="chat" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-          </>
-        ) : (
-          <AuthStack />
-        )}
-      </NavigationContainer>
+    <UserProvider>
+      <SafeAreaProvider style={styles.container}>
+        <Toaster />
+        <StatusBar barStyle="light-content" />
+        <NavigationContainer>
+          {isAuthenticated ? (
+            <>
+              <TabNavigator setIsAuthenticated={setIsAuthenticated} />
+              <TouchableOpacity
+                style={styles.chatButton}
+                onPress={() => setIsChatVisible(true)}
+              >
+                <MaterialIcons name="chat" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </>
+          ) : (
+            <AuthStack setIsAuthenticated={setIsAuthenticated} />
+          )}
+        </NavigationContainer>
 
-      <Modal
-        visible={isChatVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsChatVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalContainer}
-          activeOpacity={1}
-          onPress={() => setIsChatVisible(false)}
+        <Modal
+          visible={isChatVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setIsChatVisible(false)}
         >
           <TouchableOpacity
-            style={styles.modalContent}
+            style={styles.modalContainer}
             activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
+            onPress={() => setIsChatVisible(false)}
           >
-            <ChatInterface onClose={() => setIsChatVisible(false)} />
+            <TouchableOpacity
+              style={styles.modalContent}
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <ChatInterface onClose={() => setIsChatVisible(false)} />
+            </TouchableOpacity>
           </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-    </SafeAreaProvider>
+        </Modal>
+      </SafeAreaProvider>
+    </UserProvider>
   );
 }
 
@@ -124,13 +141,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#222222",
     elevation: 0,
-    height: 60,
-    paddingBottom: 8,
+    height: 80,
+    paddingBottom: 0,
     position: "relative",
   },
   chatButton: {
     position: "absolute",
-    bottom: 80,
+    bottom: 90,
     right: 20,
     width: 50,
     height: 50,

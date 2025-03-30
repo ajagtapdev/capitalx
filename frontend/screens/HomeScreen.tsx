@@ -7,56 +7,27 @@ import {
   Image,
   Animated,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import CreditCardList from "../components/CreditCardList";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import SettingsInterface from "../components/SettingsInterface";
 import AddCardButton from "../components/AddCardButton";
 import CardDetailsModal from "../components/CardDetailsModal";
 import { CreditCard } from "../types/CreditCard";
+import { useUser } from "../contexts/UserContext";
+import { supabase } from "../lib/supabase";
 
-const initialCards: CreditCard[] = [
-  {
-    id: 1,
-    cardName: "Chase Sapphire Reserve",
-    holderName: "Alex Smith",
-    number: "4532 7589 4521 4589",
-    expiry: "12/25",
-    type: "Visa Infinite",
-    color: "#0A84FF", // iOS Blue
-    securityCode: "123",
-  },
-  {
-    id: 2,
-    cardName: "American Express Platinum",
-    holderName: "Alex Smith",
-    number: "3782 123456 93782",
-    expiry: "03/26",
-    type: "American Express",
-    color: "#1C1C1E", // Dark Gray/Almost Black
-    securityCode: "1234",
-  },
-  {
-    id: 3,
-    cardName: "Capital One Venture",
-    holderName: "Alex Smith",
-    number: "5412 7532 4521 5678",
-    expiry: "09/24",
-    type: "Mastercard",
-    color: "#2C2C2E", // Slightly Lighter Gray
-    securityCode: "123",
-  },
-  // ... other initial cards
-];
-
-export default function HomeScreen() {
+export default function HomeScreen({ setIsAuthenticated }) {
+  const { user } = useUser();
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [isAddCardVisible, setIsAddCardVisible] = useState(false);
   const [cardName, setCardName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
-  const [cards, setCards] = useState<CreditCard[]>(initialCards);
+  const [cards, setCards] = useState<CreditCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const slideAnim = useRef(new Animated.Value(400)).current;
 
   const showSettings = () => {
@@ -81,35 +52,85 @@ export default function HomeScreen() {
     }).start();
   };
 
-  const addNewCard = (cardDetails: Omit<CreditCard, "id">) => {
-    let cardColor = "#0A84FF";
-
-    const firstDigit = cardDetails.number.charAt(0);
+  // Function to get card color based on type
+  const getCardColor = (cardNumber: string): string => {
+    // First digit of card number determines card type
+    const firstDigit = cardNumber.charAt(0);
     switch (firstDigit) {
       case "4":
-        cardColor = "#0A84FF"; // iOS Blue for Visa
-        break;
+        return "#1A1F71"; // Visa blue
       case "5":
-        cardColor = "#2C2C2E"; // Gray for Mastercard
-        break;
+        return "#EB001B"; // Mastercard red
       case "3":
-        cardColor = "#1C1C1E"; // Dark Gray/Almost Black for Amex
-        break;
+        return "#1E1E1E"; // Amex black
       default:
-        cardColor = "#3A3A3C"; // Different shade of gray for others
+        return "#006B54"; // Default green
     }
+  };
 
+  // Function to determine card type based on card number
+  const getCardType = (cardNumber: string): string => {
+    const firstDigit = cardNumber.charAt(0);
+    switch (firstDigit) {
+      case "4":
+        return "VISA";
+      case "5":
+        return "MASTERCARD";
+      case "3":
+        return "AMERICAN EXPRESS";
+      default:
+        return "UNKNOWN";
+    }
+  };
+
+  // Function to fetch cards from Supabase
+  const fetchCards = async () => {
+    try {
+      if (!user?.id) return;
+
+      const { data: cardData, error } = await supabase
+        .from("credit_cards")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("Error fetching cards:", error);
+        return;
+      }
+
+      // Transform the database cards into the CreditCard interface format
+      const transformedCards: CreditCard[] = cardData.map((dbCard) => ({
+        id: dbCard.id,
+        cardName: getCardType(dbCard.number), // Derive card name from number
+        holderName: dbCard.cardholder_name,
+        number: dbCard.number,
+        expiry: dbCard.expiry,
+        type: getCardType(dbCard.number),
+        color: getCardColor(dbCard.number),
+        securityCode: dbCard.security,
+        creditLimit: dbCard.credit_limit,
+        benefits: dbCard.benefits,
+        apr: dbCard.apr,
+      }));
+
+      setCards(transformedCards);
+    } catch (error) {
+      console.error("Error fetching cards:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch cards when component mounts and when user changes
+  useEffect(() => {
+    fetchCards();
+  }, [user]);
+
+  const addNewCard = (cardDetails: Omit<CreditCard, "id">) => {
     const newCard: CreditCard = {
-      id: Date.now(),
-      cardName: cardDetails.cardName, // The displayed name of the card product
-      holderName: cardDetails.holderName, // The user's name (stored but not displayed)
-      number: cardDetails.number,
-      expiry: cardDetails.expiry,
-      type: cardDetails.type,
-      color: cardColor,
-      securityCode: cardDetails.securityCode,
+      id: Date.now(), // This will be replaced by the database ID
+      ...cardDetails,
     };
-
     setCards((prevCards) => [...prevCards, newCard]);
   };
 
@@ -125,7 +146,9 @@ export default function HomeScreen() {
               style={styles.avatar}
             />
             <View>
-              <Text style={styles.greeting}>Good evening, Alex</Text>
+              <Text style={styles.greeting}>
+                Good evening, {user?.name ?? "Guest"}
+              </Text>
               <Text style={styles.subtitle}>Premium Member</Text>
             </View>
           </View>
@@ -136,10 +159,14 @@ export default function HomeScreen() {
       </View>
       <ScrollView style={styles.scrollView}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Your Top Cards</Text>
+          <Text style={styles.sectionTitle}>Your Cards</Text>
           <AddCardButton onPress={() => setIsAddCardVisible(true)} />
         </View>
-        <CreditCardList cards={cards} />
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#FFFFFF" />
+        ) : (
+          <CreditCardList cards={cards} />
+        )}
       </ScrollView>
       <Modal
         visible={isSettingsVisible}
@@ -171,7 +198,10 @@ export default function HomeScreen() {
                   },
                 ]}
               >
-                <SettingsInterface onClose={hideSettings} />
+                <SettingsInterface
+                  onClose={hideSettings}
+                  setIsAuthenticated={setIsAuthenticated}
+                />
               </Animated.View>
             </TouchableOpacity>
           </View>
