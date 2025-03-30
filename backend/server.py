@@ -178,19 +178,19 @@ def scan_card():
             "properties": {
                 "cardNumber": {
                     "type": "string",
-                    "description": "The credit card number."
+                    "description": "The credit card number. Leave blank if unknown."
                 },
                 "cardholderName": {
                     "type": "string",
-                    "description": "The name of the cardholder."
+                    "description": "The name of the cardholder. Leave blank if unknown."
                 },
                 "expirationDate": {
                     "type": "string",
-                    "description": "The expiration date in MM/YY format."
+                    "description": "The expiration date in MM/YY format. Leave blank if unknown."
                 },
                 "success": {
                     "type": "boolean",
-                    "description": "Whether the card details were successfully extracted."
+                    "description": "Whether at least one of the card details were successfully extracted."
                 }
             },
             "required": [
