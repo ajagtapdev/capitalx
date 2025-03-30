@@ -17,12 +17,30 @@ import HomeScreen from "./screens/HomeScreen";
 import ShopScreen from "./screens/ShopScreen";
 import LoginScreen from "./screens/LoginScreen";
 import InsightsScreen from "./screens/InsightsScreen";
+import CartScreen from "./screens/CartScreen";
 import ChatInterface from "./components/ChatInterface";
+import { CartProvider, useCart } from "./context/CartContext";
 import { useState } from "react";
 import { UserProvider } from "./contexts/UserContext";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+function CartIcon() {
+  const { getItemCount } = useCart();
+  const count = getItemCount();
+
+  return (
+    <View style={{ position: 'relative' }}>
+      <MaterialIcons name="shopping-cart" size={24} color="#8E8E93" />
+      {count > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{count}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 function TabNavigator({ setIsAuthenticated }) {
   return (
@@ -53,6 +71,13 @@ function TabNavigator({ setIsAuthenticated }) {
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="shopping-bag" size={24} color={color} />
           ),
+        }}
+      />
+      <Tab.Screen
+        name="Cart"
+        component={CartScreen}
+        options={{
+          tabBarIcon: () => <CartIcon />,
         }}
       />
       <Tab.Screen
@@ -87,46 +112,48 @@ export default function App() {
 
   return (
     <UserProvider>
-      <SafeAreaProvider style={styles.container}>
-        <Toaster />
-        <StatusBar barStyle="light-content" />
-        <NavigationContainer>
-          {isAuthenticated ? (
-            <>
-              <TabNavigator setIsAuthenticated={setIsAuthenticated} />
-              <TouchableOpacity
-                style={styles.chatButton}
-                onPress={() => setIsChatVisible(true)}
-              >
-                <MaterialIcons name="chat" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-            </>
-          ) : (
-            <AuthStack setIsAuthenticated={setIsAuthenticated} />
-          )}
-        </NavigationContainer>
+      <CartProvider>
+        <SafeAreaProvider style={styles.container}>
+          <Toaster />
+          <StatusBar barStyle="light-content" />
+          <NavigationContainer>
+            {isAuthenticated ? (
+              <>
+                <TabNavigator setIsAuthenticated={setIsAuthenticated} />
+                <TouchableOpacity
+                  style={styles.chatButton}
+                  onPress={() => setIsChatVisible(true)}
+                >
+                  <MaterialIcons name="chat" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <AuthStack setIsAuthenticated={setIsAuthenticated} />
+            )}
+          </NavigationContainer>
 
-        <Modal
-          visible={isChatVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setIsChatVisible(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalContainer}
-            activeOpacity={1}
-            onPress={() => setIsChatVisible(false)}
+          <Modal
+            visible={isChatVisible}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setIsChatVisible(false)}
           >
             <TouchableOpacity
-              style={styles.modalContent}
+              style={styles.modalContainer}
               activeOpacity={1}
-              onPress={(e) => e.stopPropagation()}
+              onPress={() => setIsChatVisible(false)}
             >
-              <ChatInterface onClose={() => setIsChatVisible(false)} />
+              <TouchableOpacity
+                style={styles.modalContent}
+                activeOpacity={1}
+                onPress={(e) => e.stopPropagation()}
+              >
+                <ChatInterface onClose={() => setIsChatVisible(false)} />
+              </TouchableOpacity>
             </TouchableOpacity>
-          </TouchableOpacity>
-        </Modal>
-      </SafeAreaProvider>
+          </Modal>
+        </SafeAreaProvider>
+      </CartProvider>
     </UserProvider>
   );
 }
@@ -172,7 +199,21 @@ const styles = StyleSheet.create({
   modalContent: {
     height: "80%",
   },
-  tabNavigator: {
-    height: 100,
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

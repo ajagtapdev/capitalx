@@ -1,186 +1,368 @@
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+  SafeAreaView,
+  Animated,
+} from 'react-native';
+import { AntDesign } from '@expo/vector-icons';
+import ProductCard from '../components/ProductCard';
+import ProductScreen from './ProductScreen';
+import amazonProducts from '../amazon_products_new.json';
 
-type Product = {
-  id: string;
-  name: string;
-  price: number;
-  rating: number;
-  reviews: number;
-  image: string;
-  prime: boolean;
-};
-
-const mockProducts: Product[] = [
-  {
-    id: '1',
-    name: 'Sony WH-1000XM4',
-    price: 349.99,
-    rating: 4.8,
-    reviews: 12453,
-    image: 'https://api.a0.dev/assets/image?text=premium%20wireless%20headphones%20modern%20sleek&aspect=1:1',
-    prime: true,
-  },
-  {
-    id: '2',
-    name: 'MacBook Pro M2',
-    price: 1299.99,
-    rating: 4.9,
-    reviews: 8932,
-    image: 'https://api.a0.dev/assets/image?text=modern%20laptop%20professional%20sleek&aspect=1:1',
-    prime: true,
-  },
-  {
-    id: '3',
-    name: 'iPhone 15 Pro',
-    price: 999.99,
-    rating: 4.7,
-    reviews: 15678,
-    image: 'https://api.a0.dev/assets/image?text=premium%20smartphone%20titanium%20finish&aspect=1:1',
-    prime: true,
-  },
-];
-
-export default function ShopScreen() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const renderItem = ({ item }: { item: Product }) => (
-    <TouchableOpacity style={styles.productCard}>
-      <Image source={{ uri: item.image }} style={styles.productImage} />
-      <View style={styles.productInfo}>
-        <Text style={styles.productName}>{item.name}</Text>
-        <View style={styles.ratingContainer}>
-          <Text style={styles.rating}>{item.rating}</Text>
-          <MaterialIcons name="star" size={16} color="#FFD700" />
-          <Text style={styles.reviews}>({item.reviews.toLocaleString()})</Text>
-        </View>
-        <Text style={styles.price}>${item.price}</Text>
-        {item.prime && (
-          <View style={styles.primeTag}>
-            <Text style={styles.primeText}>PRIME</Text>
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Featured Products</Text>
-        <View style={styles.searchContainer}>
-          <MaterialIcons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search products..."
-            placeholderTextColor="#8E8E93"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <MaterialIcons name="close" size={20} color="#8E8E93" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-      <FlatList
-        data={mockProducts.filter((product) => product.name.toLowerCase().includes(searchQuery.toLowerCase()))}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-      />
-    </SafeAreaView>
-  );
+interface Product {
+  productName: string;
+  productPrice: string;
+  productRating: string;
+  imageUrl: string[];
+  description: string;
+  productCategory: string;
+  productSeller: string;
+  deliveryDate: string;
 }
 
+const ShopScreen: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [featuredProducts] = useState<Product[]>(() => {
+    try {
+      const shuffled = [...(amazonProducts || [])].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, 6);
+    } catch (error) {
+      console.error('Error initializing featured products:', error);
+      return [];
+    }
+  });
+
+  const searchAnimation = useRef(new Animated.Value(0)).current;
+
+  const handleSearchChange = (query: string) => {
+    const trimmedQuery = query?.trim() || '';
+    setSearchQuery(query);
+    
+    if (!trimmedQuery) {
+      setSearchSuggestions([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const searchTerms = trimmedQuery.toLowerCase().split(' ');
+      const suggestions = (amazonProducts || [])
+        .filter((product: Product) => {
+          if (!product) return false;
+          const searchableText = `${product.productName || ''} ${product.productCategory || ''}`.toLowerCase();
+          return searchTerms.some(term => searchableText.includes(term));
+        })
+        .slice(0, 5);
+
+      setSearchSuggestions(suggestions);
+    } catch (error) {
+      console.error('Error getting search suggestions:', error);
+      setSearchSuggestions([]);
+    }
+  };
+
+  const handleSearch = (query: string = searchQuery) => {
+    const trimmedQuery = query?.trim() || '';
+    if (!trimmedQuery) {
+      setFilteredProducts([]);
+      setIsSearchActive(false);
+      setIsSearching(false);
+      return;
+    }
+
+    try {
+      const searchTerms = trimmedQuery.toLowerCase().split(' ');
+      const results = (amazonProducts || []).filter((product: Product) => {
+        if (!product) return false;
+        const searchableText = `${product.productName || ''} ${product.productCategory || ''} ${product.description || ''}`.toLowerCase();
+        return searchTerms.some(term => {
+          if (term === 'technology') {
+            return (
+              (product.productCategory || '').toLowerCase().includes('electronics') ||
+              (product.productName || '').toLowerCase().includes('apple') ||
+              (product.productName || '').toLowerCase().includes('phone') ||
+              (product.productName || '').toLowerCase().includes('laptop')
+            );
+          }
+          return searchableText.includes(term);
+        });
+      });
+
+      setFilteredProducts(results);
+      setIsSearchActive(true);
+      setIsSearching(false);
+      setSearchSuggestions([]);
+    } catch (error) {
+      console.error('Error performing search:', error);
+      setFilteredProducts([]);
+      setIsSearchActive(false);
+      setIsSearching(false);
+    }
+  };
+
+  const handleBack = () => {
+    Animated.timing(searchAnimation, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsSearchActive(false);
+      setSearchQuery('');
+      setIsSearching(false);
+      setSearchSuggestions([]);
+    });
+  };
+
+  useEffect(() => {
+    if (isSearchActive) {
+      Animated.spring(searchAnimation, {
+        toValue: 1,
+        useNativeDriver: true,
+        damping: 20,
+        stiffness: 90,
+      }).start();
+    }
+  }, [isSearchActive]);
+
+  const renderHomeView = () => (
+    <View style={styles.homeContainer}>
+      <Text style={styles.title}>Today's Hits</Text>
+      <FlatList
+        data={featuredProducts}
+        renderItem={({ item }) => (
+          <ProductCard
+            productName={item.productName}
+            productPrice={item.productPrice}
+            productRating={item.productRating}
+            imageUrl={item.imageUrl}
+            description={item.description}
+            onPress={() => setSelectedProduct(item)}
+          />
+        )}
+        keyExtractor={(item, index) => `${item.productName}-${index}`}
+        contentContainerStyle={styles.listContainer}
+      />
+    </View>
+  );
+
+  const renderSearchSuggestions = () => (
+    <View style={styles.suggestionsContainer}>
+      {searchSuggestions.map((item, index) => (
+        <TouchableOpacity
+          key={`${item.productName}-${index}`}
+          style={styles.suggestionItem}
+          onPress={() => {
+            setSearchQuery(item.productName);
+            handleSearch(item.productName);
+          }}
+        >
+          <AntDesign name="search1" size={16} color="#8E8E93" style={styles.suggestionIcon} />
+          <Text style={styles.suggestionText} numberOfLines={1}>
+            {item.productName}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const renderSearchView = () => (
+    <Animated.View 
+      style={[
+        styles.searchContainer,
+        {
+          opacity: searchAnimation,
+          transform: [{
+            translateX: searchAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [300, 0],
+            }),
+          }],
+        },
+      ]}
+    >
+      <View style={styles.searchHeader}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={handleBack}
+        >
+          <AntDesign name="left" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={styles.searchResultsTitle}>Search results</Text>
+      </View>
+      <FlatList
+        data={filteredProducts}
+        renderItem={({ item }) => (
+          <ProductCard
+            productName={item.productName}
+            productPrice={item.productPrice}
+            productRating={item.productRating}
+            imageUrl={item.imageUrl}
+            description={item.description}
+            onPress={() => setSelectedProduct(item)}
+          />
+        )}
+        keyExtractor={(item, index) => `${item.productName}-${index}`}
+        contentContainerStyle={styles.listContainer}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No results found</Text>
+          </View>
+        )}
+      />
+    </Animated.View>
+  );
+
+  if (selectedProduct) {
+    return (
+      <ProductScreen
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+      />
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.searchInputContainer}>
+        <AntDesign name="search1" size={20} color="#8E8E93" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search products..."
+          placeholderTextColor="#8E8E93"
+          value={searchQuery}
+          onChangeText={handleSearchChange}
+          onSubmitEditing={() => handleSearch()}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity 
+            onPress={() => {
+              setSearchQuery('');
+              handleSearch('');
+            }}
+            style={styles.clearButton}
+          >
+            <AntDesign name="close" size={20} color="#8E8E93" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {isSearching && searchSuggestions.length > 0 ? renderSearchSuggestions() : null}
+      {isSearchActive ? renderSearchView() : renderHomeView()}
+    </SafeAreaView>
+  );
+};
+
 const styles = StyleSheet.create({
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    marginTop: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: '#222222',
-  },
-  searchInput: {
-    flex: 1,
-    height: 40,
-    color: '#FFFFFF',
-    marginLeft: 8,
-    fontSize: 16,
-  },
-  searchIcon: {
-    marginRight: 4,
-  },
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#000000',
   },
-  header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#222222',
+  homeContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  searchContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
     color: '#FFFFFF',
-  },
-  listContainer: {
-    padding: 16,
-  },  productCard: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     marginBottom: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#222222',
   },
-  productImage: {
-    width: '100%',
-    height: 200,
-    resizeMode: 'cover',
-  },
-  productInfo: {
-    padding: 16,
-  },
-  productName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  ratingContainer: {
+  searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    paddingHorizontal: 12,
+    height: 44,
   },
-  rating: {
+  searchIcon: {
+    marginRight: 8,
+  },
+  clearButton: {
+    padding: 4,
+  },
+  searchInput: {
+    flex: 1,
     color: '#FFFFFF',
-    marginRight: 4,
+    fontSize: 16,
+    height: '100%',
   },
-  reviews: {
-    color: '#8E8E93',
-    marginLeft: 4,
+  listContainer: {
+    paddingTop: 8,
+    paddingBottom: 24,
   },
-  price: {
+  searchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#000000',
+  },
+  backButton: {
+    marginRight: 16,
+    padding: 4,
+  },
+  searchResultsTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#0A84FF',
-    marginBottom: 8,
-  },
-  primeTag: {
-    backgroundColor: '#0A84FF',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-  },
-  primeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
     fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 16,
+    right: 16,
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+    padding: 8,
+    zIndex: 1,
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  suggestionIcon: {
+    marginRight: 12,
+  },
+  suggestionText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    flex: 1,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 32,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#8E8E93',
   },
 });
+
+export default ShopScreen;
